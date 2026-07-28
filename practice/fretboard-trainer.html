@@ -206,6 +206,7 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid 
 <div class="tabs" id="tabs">
   <div class="tab on" data-mode="name">Name the Note<span class="t2">a dot appears &rarr; you name it</span></div>
   <div class="tab" data-mode="find">Find the Note<span class="t2">a note is named &rarr; you find every one</span></div>
+  <div class="tab" data-mode="play">&#127908; Play the Note<span class="t2">a note is named &rarr; you play it</span></div>
   <div class="tab" data-mode="learn">Learn<span class="t2">no test &mdash; just show me the board</span></div>
 </div>
 
@@ -221,14 +222,6 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid 
   <button class="btn" id="btnReveal">Reveal answer</button>
   <button class="btn" id="btnHear">&#9654; Hear every one</button>
 </div>
-<div class="row" id="inputRow" style="margin:0 0 8px;">
-  <span style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Input</span>
-  <div class="chips">
-    <div class="chip on" id="inClick">Click a button</div>
-    <div class="chip" id="inPlay">&#127908; Play it on the guitar</div>
-  </div>
-</div>
-
 <div class="mic" id="micPanel">
   <div class="mic-head">
     <button class="btn primary" id="micStart">Enable microphone</button>
@@ -243,6 +236,15 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid 
       <span class="blab">Signal</span><div class="meter"><i id="micLevel"></i></div>
       <span class="blab">Confidence</span><div class="meter"><i id="micClarity" class="c2"></i></div>
     </div>
+  </div>
+  <div class="row" id="sensRow" style="margin-top:10px;display:none">
+    <span style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Sensitivity</span>
+    <div class="chips">
+      <div class="chip" data-sens="normal">Normal</div>
+      <div class="chip on" data-sens="high">High</div>
+      <div class="chip" data-sens="max">Max</div>
+    </div>
+    <span class="sub" style="font-size:13px;">High suits an unplugged electric. Max if it still won't hear you.</span>
   </div>
 </div>
 
@@ -389,7 +391,7 @@ const DEF = {
   notes: [true,false,true,false,true,true,false,true,false,true,false,true],
   sound: true, names: false, auto: true, adaptive: false, flats: false,
   hearAll: true, hearOnShow: false, tone: "synth",
-  level: "basic", goalQ: 80, goalS: 2, input: "click"
+  level: "basic", goalQ: 80, goalS: 2, sens: "high"
 };
 let state = JSON.parse(JSON.stringify(DEF));
 
@@ -479,7 +481,7 @@ function save(){
       notes:state.notes, sound:state.sound, names:state.names, auto:state.auto,
       adaptive:state.adaptive, flats:state.flats,
       hearAll:state.hearAll, hearOnShow:state.hearOnShow, tone:state.tone,
-      level:state.level, goalQ:state.goalQ, goalS:state.goalS, input:state.input
+      level:state.level, goalQ:state.goalQ, goalS:state.goalS, sens:state.sens
     }));
   } catch (e) {}
 }
@@ -645,13 +647,23 @@ function seqAt(s, f){
    ============================================================ */
 const MIC = {
   ready:false, starting:false, stream:null, an:null, raw:null,
-  raf:0, run:[], armed:true, muteUntil:0,
-  midi:null, cents:0, clarity:0, level:0, err:""
+  raf:0, run:[], runStart:0, armed:true, muteUntil:0,
+  midi:null, cents:0, clarity:0, level:0, err:"",
+  gate:0.001
 };
+
+/* An unplugged electric across a desk sits near -30 dB. The detector is amplitude-
+   invariant (NSDF normalises), so the level gate was the ONLY thing rejecting a quiet
+   source: measured 0/37 at the old 0.008, 37/37 at 0.001.
+   A noise-floor-tracking gate was tried and was measurably worse (3/37 at -29 dB) —
+   it absorbs the note's own attack and decay and then gates out the note. What actually
+   rejects noise is clarity >= 0.90 held for 6 frames over 100 ms: that produced zero
+   false triggers even against noise LOUDER than the note. So the gate stays a constant
+   and is deliberately set low. */
+const SENS = { normal:0.0040, high:0.0010, max:0.0003 };
 const DEC = 4;                    /* decimation factor */
 const MIC_FFT = 4096;             /* native-rate window -> 1024 samples at ~11 kHz */
 const CLARITY_MIN = 0.90;
-const RMS_GATE = 0.008;
 /* 6 agreeing frames spanning >=100 ms. Single frames are ~87% reliable on a low E
    (harmonic-rich, weak fundamental); consecutive agreement over a fresh window is not. */
 const STABLE_FRAMES = 6;
@@ -677,12 +689,12 @@ function conditionBlock(src, sr){
   return out;
 }
 
-function detectPitch(buf, sr, minF, maxF){
+function detectPitch(buf, sr, minF, maxF, gate){
   const N = buf.length;
   let rms = 0;
   for (let i = 0; i < N; i++) rms += buf[i] * buf[i];
   rms = Math.sqrt(rms / N);
-  if (rms < RMS_GATE) return {freq:null, clarity:0, rms:rms};
+  if (rms < (gate == null ? 0.008 : gate)) return {freq:null, clarity:0, rms:rms};
   const maxLag = Math.min(N - 1, Math.floor(sr / (minF || 70)));
   const minLag = Math.max(2, Math.floor(sr / (maxF || 1400)));
   const nsdf = new Float32Array(maxLag + 2);
@@ -746,20 +758,22 @@ function micStop(){
 }
 function micLoop(){
   MIC.raf = requestAnimationFrame(micLoop);
-  if (!MIC.ready || state.input !== "play" || state.mode !== "name") return;
+  if (!MIC.ready || state.mode !== "play") return;
   MIC.an.getFloatTimeDomainData(MIC.raw);
   const sr = actx.sampleRate;
   const dec = conditionBlock(MIC.raw, sr);
-  const r = detectPitch(dec, sr / DEC, 70, 1400);
-  MIC.level = Math.min(1, r.rms * 14);
+
+  MIC.gate = SENS[state.sens] || SENS.high;
+  const r = detectPitch(dec, sr / DEC, 70, 1400, MIC.gate);
+  MIC.level = Math.min(1, Math.sqrt(r.rms / 0.05));      /* square-root scaling so quiet input is still visible */
   MIC.clarity = r.clarity;
 
   /* ignore our own speaker output */
   if (Date.now() < MIC.muteUntil){ MIC.run = []; renderMicLive(); return; }
 
-  if (!r.freq || r.clarity < CLARITY_MIN){
+  if (!r.freq || r.clarity < CLARITY_MIN || r.rms < MIC.gate){
     MIC.run = [];
-    if (r.rms < RMS_GATE) MIC.armed = true;      /* silence re-arms for the next pluck */
+    if (r.rms < MIC.gate) MIC.armed = true;      /* silence re-arms for the next pluck */
     MIC.midi = null;
     renderMicLive();
     return;
@@ -790,19 +804,22 @@ function positionsForMidi(m){
 }
 const posLabel = p => "string " + STR_NUM[p.s] + " fret " + p.f;
 
+/* Play mode: you're told a note name and nothing else. Any position of that note
+   on the strings and frets under test counts — the whole point is recalling where
+   it lives, not reading a marker off the board. */
 function onNoteHeard(m){
   if (!q || q.done) return;
-  const target = OPEN_MIDI[q.s] + q.f;
-  if (m === target){
-    q.done = true; q.wasRight = true; q.heard = m;
-    q.unisons = positionsForMidi(m).filter(p => !(p.s === q.s && p.f === q.f));
+  const hit = q.targets.filter(p => OPEN_MIDI[p.s] + p.f === m);
+
+  if (hit.length){
+    q.done = true; q.wasRight = true; q.heard = m; q.played = hit;
     recordResult(q.pc, true, Date.now() - q.t0);
     renderAll();
-    if (state.auto) advanceTimer = setTimeout(newQuestion, q.unisons.length ? 2600 : 1400);
+    if (state.auto) advanceTimer = setTimeout(newQuestion, 1600);
     return;
   }
   if (m % 12 === q.pc){
-    /* right note, wrong octave — forgiving: doesn't end the question */
+    /* right note, just not within the strings/frets being tested — never punished */
     q.nearMiss = m;
     q.nearCount = (q.nearCount || 0) + 1;
     renderAll();
@@ -981,12 +998,22 @@ function dotState(s, f, pc, inRange){
   }
 
   /* NAME mode */
-  if (state.mode === "name"){
-    /* other positions that produce the identical pitch — shown after a correct played answer */
-    if (q && q.done && q.unisons && q.unisons.some(p => p.s === s && p.f === f)){
-      return Object.assign(base, {circle:true, r:12.5, fill:"none", op:1,
-        stroke:"#e0b341", sw:2.5, label:pcName(pc), tc:"#e0b341", fs:IS_ACC[pc] ? 10 : 12});
+  /* PLAY mode — board stays blank until you answer, then it shows every place the note lives */
+  if (state.mode === "play"){
+    if (!q || !q.done){
+      return inRange ? Object.assign(base, {circle:true, r:3.2, fill:"#3d4657", op:1}) : base;
     }
+    const isTarget = q.targets.some(p => p.s === s && p.f === f);
+    const wasPlayed = q.played && q.played.some(p => p.s === s && p.f === f);
+    if (wasPlayed) return Object.assign(base, {circle:true, r:13.5, fill:"#57c98b", op:1,
+      label:pcName(pc), tc:"#0f1115", fs:IS_ACC[pc] ? 10 : 12});
+    if (isTarget) return Object.assign(base, {circle:true, r:12.5, fill:"none", op:1,
+      stroke:"#e0b341", sw:2.5, label:pcName(pc), tc:"#e0b341", fs:IS_ACC[pc] ? 10 : 12});
+    if (inRange) return Object.assign(base, {circle:true, r:3.2, fill:"#3d4657", op:1});
+    return base;
+  }
+
+  if (state.mode === "name"){
     if (q && q.s === s && q.f === f){
       if (q.done) return Object.assign(base, {circle:true, r:13.5,
         fill: q.wasRight ? "#57c98b" : "#e5736b", op:1, label:pcName(pc), tc:"#0f1115",
@@ -1056,6 +1083,18 @@ function newQuestion(){
     lastKey = pick.s + ":" + pick.f;
     q = {s:pick.s, f:pick.f, pc:pick.pc, t0:Date.now(), done:false, wasRight:false};
     if (state.hearOnShow) pluck(OPEN_MIDI[pick.s] + pick.f, true);
+  } else if (state.mode === "play"){
+    const notes = activeNotes();
+    if (!notes.length){ q = null; renderAll(); return; }
+    let pc;
+    for (let i = 0; i < 24; i++){
+      pc = state.adaptive ? weightedPick(notes.map(n => ({pc:n}))).pc
+                          : notes[Math.floor(Math.random() * notes.length)];
+      if (String(pc) !== lastKey || notes.length === 1) break;
+    }
+    lastKey = String(pc);
+    q = {pc:pc, targets:activePositions(pc), t0:Date.now(), done:false, wasRight:false};
+    MIC.armed = true; MIC.run = [];
   } else if (state.mode === "find"){
     const notes = activeNotes();
     if (!notes.length){ q = null; renderAll(); return; }
@@ -1080,7 +1119,7 @@ function recordResult(pc, right, ms){
   /* per-day history, split by drill */
   const now = Date.now();
   const day = dayObj(todayKey());
-  const rec = dayRec(todayKey(), state.mode === "find" ? "find" : "name");
+  const rec = dayRec(todayKey(), state.mode === "find" ? "find" : (state.mode === "play" ? "play" : "name"));
   if (!stats.lastTs || (now - stats.lastTs) > SESSION_GAP_MS) day.sessions++;
   stats.lastTs = now;
   rec.a++;
@@ -1146,6 +1185,11 @@ function reveal(){
   if (state.mode === "name"){
     q.done = true; q.wasRight = false; q.revealed = true;
     recordResult(q.pc, false, null);
+  } else if (state.mode === "play"){
+    q.done = true; q.wasRight = false; q.revealed = true;
+    recordResult(q.pc, false, null);
+    renderAll();
+    return;
   } else if (state.mode === "find"){
     q.done = true; q.wasRight = false; q.revealed = true;
     recordResult(q.pc, false, null);
@@ -1175,25 +1219,47 @@ function renderPrompt(){
   }
   if (!q){ elPrompt.innerHTML = '<div class="txt"><span class="hint">Press <b>Next question</b> to start.</span></div>'; return; }
 
+  const midiName = m => SHARP[m % 12] + (Math.floor(m / 12) - 1);
+
+  if (state.mode === "play"){
+    /* You get the note name and nothing else. No marker, no position — the point is
+       recalling where it lives, not reading it off the board. */
+    const strs = [0,1,2,3,4,5].filter(s => state.strings[s]);
+    const strTxt = strs.length === 6 ? "any string"
+      : "string" + (strs.length > 1 ? "s " : " ") + strs.map(s => STR_NUM[s]).join(", ") +
+        " (" + strs.map(s => STR_LABEL[s]).join(" ") + ")";
+    const lo = Math.min(state.fretMin, state.fretMax), hi = Math.max(state.fretMin, state.fretMax);
+    let hint = strTxt + " &middot; frets " + lo + "&ndash;" + hi + " &middot; " +
+               q.targets.length + " place" + (q.targets.length === 1 ? "" : "s") + " it could be";
+    let fb = "";
+    if (q.done && q.wasRight){
+      hint = midiName(q.heard) + " &mdash; " + q.played.map(posLabel).join(" or ") +
+             ". All " + q.targets.length + " marked on the board.";
+      fb = '<span class="fb ok">&#10003; ' + pcNameBoth(q.pc) + '</span>';
+    } else if (q.done && q.revealed){
+      hint = "In range: " + q.targets.map(posLabel).join(", ") + ".";
+      fb = '<span class="fb info">shown on the board</span>';
+    } else if (q.done){
+      hint = "I heard " + midiName(q.heard) + ". The " + pcNameBoth(q.pc) +
+             "s in range are marked on the board.";
+      fb = '<span class="fb no">&#10007; that was ' + pcNameBoth(q.heard % 12) + '</span>';
+    } else if (q.nearMiss != null){
+      hint = "That is " + pcNameBoth(q.pc) + " &mdash; but " + midiName(q.nearMiss) +
+             ", outside the strings and frets under test. Find another one.";
+      fb = '<span class="fb info">right note, outside the range</span>';
+    }
+    elPrompt.innerHTML =
+      '<div class="txt"><div class="big">Play ' + (/^[AEF]/.test(SHARP[q.pc]) ? "an " : "a ") +
+      '<span style="color:var(--accent)">' + pcNameBoth(q.pc) + '</span></div>' +
+      '<span class="hint">' + hint + '</span></div>' + fb;
+    return;
+  }
+
   if (state.mode === "name"){
     /* the position is only spelled out AFTER you answer — otherwise it does the reading for you */
-    const play = (state.input === "play");
-    const midiName = m => SHARP[m % 12] + (Math.floor(m / 12) - 1);
-    let posTxt = q.done
+    const posTxt = q.done
       ? "string " + STR_NUM[q.s] + " (" + STR_LABEL[q.s] + "), fret " + q.f + (q.f === 0 ? " — open" : "")
-      : (play ? "play the starred position on your guitar" : "find the star on the board");
-    if (!q.done && play && q.nearMiss != null){
-      posTxt = "that's " + pcNameBoth(q.pc) + ", but " + midiName(q.nearMiss) +
-               " — the star wants " + midiName(OPEN_MIDI[q.s] + q.f) + ". Try again.";
-    }
-    if (q.done && play && q.wasRight && q.unisons && q.unisons.length){
-      posTxt = midiName(OPEN_MIDI[q.s] + q.f) + " — I hear pitch, not position, so that could also have been " +
-               q.unisons.map(posLabel).join(" or ") + ".";
-    }
-    if (q.done && play && !q.wasRight && q.heard != null && !q.revealed){
-      posTxt = "I heard " + midiName(q.heard) + ". The star was " + pcNameBoth(q.pc) +
-               " on string " + STR_NUM[q.s] + " fret " + q.f + ".";
-    }
+      : "find the star on the board";
     let fb = "";
     if (q.done){
       fb = q.revealed
@@ -1201,12 +1267,9 @@ function renderPrompt(){
         : (q.wasRight
             ? '<span class="fb ok">&#10003; ' + pcNameBoth(q.pc) + '</span>'
             : '<span class="fb no">&#10007; that was ' + pcNameBoth(q.pc) + '</span>');
-    } else if (play && q.nearMiss != null){
-      fb = '<span class="fb info">right note, wrong octave</span>';
     }
-    const head = play && !q.done ? "Play this note" : "What note is this?";
     elPrompt.innerHTML =
-      '<div class="txt"><div class="big">' + head + '</div>' +
+      '<div class="txt"><div class="big">What note is this?</div>' +
       '<span class="hint">' + posTxt + '</span></div>' + fb;
   } else {
     const rem = q.positions.length - q.found.length;
@@ -1234,9 +1297,7 @@ const ORDER_BASIC = [9, 11, 0, 2, 4, 5, 7];                       /* A B C D E F
 const ORDER_ADV   = [9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8];       /* A A♯ B C C♯ D / D♯ E F F♯ G G♯ */
 
 function renderAnswers(){
-  if (state.mode !== "name" || state.input === "play"){
-    elAnswers.innerHTML = ""; elAnswers.style.display = "none"; return;
-  }
+  if (state.mode !== "name"){ elAnswers.innerHTML = ""; elAnswers.style.display = "none"; return; }
   elAnswers.style.display = "";
   /* Basic level offers only the seven natural notes — that's the whole point of Basic */
   const basic = (state.level === "basic");
@@ -1395,7 +1456,7 @@ function renderHistory(){
       const col = pct >= 85 ? "#57c98b" : (pct >= 65 ? "#e0b341" : "#e5736b");
       o += '<tr><td>' + (i === 0 ? prettyDate(k) : "") + '</td>' +
            '<td>' + (i === 0 ? (day.sessions || 0) : "") + '</td>' +
-           '<td>' + (m === "find" ? "Find the note" : "Name the note") + '</td>' +
+           '<td>' + (m === "find" ? "Find the note" : m === "play" ? "Play the note" : "Name the note") + '</td>' +
            '<td>' + r.a + '</td>' +
            '<td style="color:' + col + ';font-weight:600">' + pct + '%</td>' +
            '<td>' + (r.timed ? (r.ms / r.timed / 1000).toFixed(1) + "s" : "–") + '</td></tr>';
@@ -1434,6 +1495,7 @@ function renderChips(){
 function hearTargetPc(){
   if (state.mode === "find" && q) return q.pc;
   if (state.mode === "name" && q && q.done) return q.pc;
+  if (state.mode === "play" && q) return q.pc;
   if (state.mode === "learn"){
     const on = [];
     for (let pc = 0; pc < 12; pc++) if (state.notes[pc]) on.push(pc);
@@ -1461,17 +1523,17 @@ function renderMicLive(){
 
 function renderMic(){
   const panel = $("micPanel");
-  const show = (state.mode === "name" && state.input === "play");
+  const show = (state.mode === "play");
   panel.className = "mic" + (show ? " show" : "") + (MIC.ready ? " listening" : "");
-  $("inputRow").style.display = (state.mode === "name") ? "" : "none";
-  $("inClick").classList.toggle("on", state.input === "click");
-  $("inPlay").classList.toggle("on", state.input === "play");
   if (!show) return;
   $("micStart").style.display = MIC.ready ? "none" : "";
   $("micStart").textContent = MIC.starting ? "Starting…" : "Enable microphone";
   $("micLive").style.display = MIC.ready ? "" : "none";
+  $("sensRow").style.display = MIC.ready ? "" : "none";
+  [...document.querySelectorAll("[data-sens]")].forEach(c =>
+    c.classList.toggle("on", c.dataset.sens === state.sens));
   $("micMsg").textContent = MIC.err ? MIC.err
-    : (MIC.ready ? "Listening — play the starred note. Single notes only, clean tone."
+    : (MIC.ready ? "Listening. Single notes, clean tone — an unplugged electric is fine on High."
                  : "One-off browser permission. Nothing is recorded or sent anywhere.");
   $("micMsg").style.color = MIC.err ? "var(--red)" : "";
   renderMicLive();
@@ -1539,6 +1601,8 @@ $("tabs").addEventListener("click", e => {
   const t = e.target.closest(".tab"); if (!t) return;
   stopSeq();
   state.mode = t.dataset.mode; save();
+  if (state.mode === "play"){ if (!MIC.ready) micStart(); else if (!MIC.raf) micLoop(); }
+  else micStop();
   q = null;
   if (state.mode === "learn") renderAll(); else newQuestion();
 });
@@ -1633,15 +1697,12 @@ $("optSound").addEventListener("change", e => { state.sound = e.target.checked; 
 $("optNames").addEventListener("change", e => { state.names = e.target.checked; save(); renderAll(); });
 $("optAuto").addEventListener("change", e => { state.auto = e.target.checked; save(); });
 $("optAdaptive").addEventListener("change", e => { state.adaptive = e.target.checked; save(); });
-$("inClick").addEventListener("click", () => {
-  state.input = "click"; save(); micStop(); q = null; newQuestion();
-});
-$("inPlay").addEventListener("click", () => {
-  state.input = "play"; save();
-  q = null; newQuestion();
-  if (MIC.ready && !MIC.raf) micLoop(); else if (!MIC.ready) micStart();
-});
 $("micStart").addEventListener("click", micStart);
+document.addEventListener("click", e => {
+  const c = e.target.closest("[data-sens]"); if (!c) return;
+  state.sens = c.dataset.sens;
+  save(); renderMic();
+});
 
 $("toneSynth").addEventListener("click", () => { state.tone = "synth"; save(); renderTone(); });
 $("toneGuitar").addEventListener("click", () => {
@@ -1664,7 +1725,7 @@ document.addEventListener("keydown", e => {
   const k = e.key;
   if (k === " " || k === "Enter"){ e.preventDefault(); newQuestion(); return; }
   if (k === "?" || k === "/"){ e.preventDefault(); reveal(); return; }
-  if (state.mode !== "name" || state.input === "play") return;
+  if (state.mode !== "name") return;
   const low = k.toLowerCase();
   if (LETTER_PC.hasOwnProperty(low)){
     e.preventDefault();
@@ -1687,6 +1748,7 @@ $("persistNote").textContent = canPersist
   ? "Stats are saved in this browser."
   : "Stats are session-only here (browser storage unavailable).";
 if (state.tone === "guitar") gtrLoadAll();
+if (state.mode === "play") micStart();
 if (state.mode === "learn") renderAll(); else newQuestion();
 </script>
 </body>
