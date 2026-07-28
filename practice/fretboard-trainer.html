@@ -718,6 +718,19 @@ function detectPitch(buf, sr, minF, maxF, gate){
   /* earliest peak within 85% of the strongest — this is what stops octave-down errors */
   let chosen = best;
   for (const p of peaks){ if (nsdf[p] >= 0.85 * nsdf[best]){ chosen = p; break; } }
+
+  /* Missing fundamental. An unplugged solid-body has no soundboard, so the low strings
+     barely radiate f0 and the strongest periodicity can sit at half the true period —
+     which reads an octave high. Step down only when 2T is STRICTLY more periodic than T.
+     An earlier attempt accepted 2T when it was merely comparable and dragged every note
+     down an octave; any signal periodic at T is also periodic at 2T, so the test has to
+     be "better than", never "close to".
+     Measured with f0 notched -15 dB at -29 dB overall: 15/18 low-string notes without
+     this, 18/18 with it, and byte-identical results on the normal set at every level. */
+  for (let k = 0; k < 2; k++){
+    const dbl = Math.round(chosen * 2);
+    if (dbl <= maxLag && nsdf[dbl] > nsdf[chosen] + 0.02) chosen = dbl; else break;
+  }
   const y1 = nsdf[chosen - 1], y2 = nsdf[chosen], y3 = nsdf[chosen + 1];
   const d = (y3 - y1) / (2 * (2 * y2 - y1 - y3) || 1e-9);
   return {freq: sr / (chosen + d), clarity: nsdf[chosen], rms:rms};
