@@ -660,7 +660,7 @@ const MIC = {
   ready:false, starting:false, stream:null, an:null, raw:null,
   raf:0, hist:[], lastCommit:0, agree:0, span:0, muteUntil:0, paused:false,
   midi:null, cents:0, clarity:0, level:0, err:"", gate:0.001,
-  rec:null, recNode:null, recBuf:[], recUntil:0
+  rec:null, recNode:null, recBuf:[], recUntil:0, strainSince:0
 };
 
 /* An unplugged electric across a desk sits near -30 dB. The detector is amplitude-
@@ -1629,6 +1629,23 @@ function renderMicLive(){
     if (wait > 0) need.push("cooldown " + wait + "ms");
     d.textContent = "level " + MIC.level.toFixed(2) + " · clarity " + MIC.clarity.toFixed(2) +
       " · gate " + MIC.gate.toFixed(4) + (need.length ? "  —  waiting on: " + need.join(", ") : "  —  registering");
+
+    /* Plenty of sound arriving but never a stable pitch: that is a capture problem,
+       not a threshold problem, and no amount of waiting will fix it. Say so. */
+    const t = Date.now();
+    if (MIC.level > 0.15 && MIC.clarity < CLARITY_MIN) {
+      if (!MIC.strainSince) MIC.strainSince = t;
+    } else if (MIC.clarity >= CLARITY_MIN || MIC.level <= 0.05) {
+      MIC.strainSince = 0;
+    }
+    if (MIC.strainSince && t - MIC.strainSince > 6000){
+      d.textContent = "Hearing plenty of sound but no steady pitch — that usually means the " +
+        "microphone is getting the pluck but not the ringing string. Move much closer to the mic, " +
+        "or plug in. An unplugged solid-body at arm's length often can't be read.";
+      d.style.color = "var(--accent)";
+    } else {
+      d.style.color = "";
+    }
   }
 }
 
