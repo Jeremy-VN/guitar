@@ -250,9 +250,9 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid 
   <div class="row" id="sensRow" style="margin-top:10px;display:none">
     <span style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Sensitivity</span>
     <div class="chips">
-      <div class="chip" data-sens="normal">Normal</div>
-      <div class="chip on" data-sens="high">High</div>
-      <div class="chip" data-sens="max">Max</div>
+      <div class="chip" data-sens="normal">Acoustic / amplified</div>
+      <div class="chip" data-sens="high">Quiet</div>
+      <div class="chip" data-sens="max">Very quiet</div>
     </div>
     <button class="btn" id="micRec">&#9210; Record 10 s to send me</button>
     <span class="sub" id="recMsg" style="font-size:13px;"></span>
@@ -402,7 +402,7 @@ const DEF = {
   notes: [true,false,true,false,true,true,false,true,false,true,false,true],
   sound: true, names: false, auto: true, adaptive: false, flats: false,
   hearAll: true, hearOnShow: false, tone: "synth",
-  level: "basic", goalQ: 80, goalS: 2, sens: "high"
+  level: "basic", goalQ: 80, goalS: 2, sens: "normal"
 };
 let state = JSON.parse(JSON.stringify(DEF));
 
@@ -660,7 +660,8 @@ const MIC = {
   ready:false, starting:false, stream:null, an:null, raw:null,
   raf:0, hist:[], lastCommit:0, agree:0, span:0, muteUntil:0, paused:false,
   midi:null, cents:0, clarity:0, level:0, err:"", gate:0.001,
-  rec:null, recNode:null, recBuf:[], recUntil:0, strainSince:0
+  rec:null, recNode:null, recBuf:[], recUntil:0, strainSince:0,
+  env:0, envMin:1e9, needOnset:false
 };
 
 /* An unplugged electric across a desk sits near -30 dB. The detector is amplitude-
@@ -672,6 +673,11 @@ const MIC = {
    false triggers even against noise LOUDER than the note. So the gate stays a constant
    and is deliberately set low. */
 const SENS = { normal:0.0040, high:0.0010, max:0.0003 };
+const SENS_LABEL = {
+  normal: ["Acoustic / amplified", "loudest source, fewest misfires"],
+  high:   ["Quiet",                "soft playing, or further from the mic"],
+  max:    ["Very quiet",           "last resort — misfires more"]
+};
 const DEC = 4;                    /* decimation factor */
 const MIC_FFT = 4096;             /* native-rate window -> 1024 samples at ~11 kHz */
 const CLARITY_MIN = 0.90;
@@ -686,6 +692,13 @@ const HIST_MS = 450;
 const AGREE = 0.70;
 const RECOMMIT_MS = 900;    /* debounce between commits — replaces "wait for silence",
                                which never happened in a room with any background noise */
+/* One commit per PLUCK. After answering, the previous note is still ringing when the
+   next question appears, and the detector would happily read it again. Rather than
+   filtering out "the same note as last time" — which fails the moment the ringing note
+   is a wrong answer, and can't tell a genuine repeat from a leftover — require a fresh
+   onset: the envelope has to fall and then rise again before anything else counts. */
+const ONSET_RATIO = 1.7;
+const ONSET_TIMEOUT = 5000;   /* never leave you stuck if the room is oddly steady */
 const CENTS_TOL = 50;             /* "forgiving" — half a semitone either way */
 const f2m = f => 69 + 12 * Math.log2(f / 440);
 
@@ -834,6 +847,7 @@ function micRecordStop(){
 function micStop(){
   if (MIC.raf) cancelAnimationFrame(MIC.raf);
   MIC.raf = 0; MIC.hist = []; MIC.midi = null; MIC.clarity = 0; MIC.level = 0; MIC.agree = 0;
+  MIC.env = 0; MIC.envMin = 1e9; MIC.needOnset = false;
 }
 function micLoop(){
   MIC.raf = requestAnimationFrame(micLoop);
@@ -842,8 +856,21 @@ function micLoop(){
   const sr = actx.sampleRate;
   const dec = conditionBlock(MIC.raw, sr);
 
-  MIC.gate = SENS[state.sens] || SENS.high;
+  MIC.gate = SENS[state.sens] || SENS.normal;
   const r = detectPitch(dec, sr / DEC, 70, 1400, MIC.gate);
+
+  /* envelope + onset: has a new note actually been struck since the last answer? */
+  MIC.env = 0.75 * MIC.env + 0.25 * r.rms;
+  if (MIC.env < MIC.envMin) MIC.envMin = MIC.env;
+  if (MIC.needOnset){
+    if (MIC.env > Math.max(MIC.gate, MIC.envMin * ONSET_RATIO)){
+      MIC.needOnset = false;
+      MIC.envMin = MIC.env;
+      MIC.hist = [];                 /* nothing heard before the pluck counts */
+    } else if (Date.now() - MIC.lastCommit > ONSET_TIMEOUT){
+      MIC.needOnset = false;
+    }
+  }
   MIC.level = Math.min(1, Math.sqrt(r.rms / 0.05));      /* square-root scaling so quiet input is still visible */
   MIC.clarity = r.clarity;
 
@@ -879,9 +906,11 @@ function micLoop(){
 
   if (MIC.hist.length >= STABLE_FRAMES && MIC.span >= STABLE_MS &&
       MIC.agree >= AGREE && (now - MIC.lastCommit) > RECOMMIT_MS &&
-      Math.abs(MIC.cents) <= CENTS_TOL){
+      !MIC.needOnset && Math.abs(MIC.cents) <= CENTS_TOL){
     MIC.lastCommit = now;
     MIC.hist = [];
+    MIC.needOnset = true;            /* the ringing note must not answer the next question */
+    MIC.envMin = MIC.env;
     onNoteHeard(topM);
   }
   renderMicLive();
@@ -1163,7 +1192,8 @@ function newQuestion(){
   clearTimeout(advanceTimer);
   if (seq){ if (seq.timer) clearTimeout(seq.timer); seq = null; }
   answerLocked = false;
-  MIC.hist = []; MIC.lastCommit = 0; MIC.midi = null; MIC.agree = 0;
+  MIC.hist = []; MIC.lastCommit = Date.now(); MIC.midi = null; MIC.agree = 0;
+  MIC.needOnset = true; MIC.envMin = MIC.env;
   const pool = activePositions(null);
   if (!pool.length){ q = null; renderAll(); return; }
 
@@ -1188,7 +1218,8 @@ function newQuestion(){
     }
     lastKey = String(pc);
     q = {pc:pc, targets:activePositions(pc), t0:Date.now(), done:false, wasRight:false};
-    MIC.hist = []; MIC.lastCommit = 0;
+    MIC.hist = []; MIC.lastCommit = Date.now();
+    MIC.needOnset = true; MIC.envMin = MIC.env;
   } else if (state.mode === "find"){
     const notes = activeNotes();
     if (!notes.length){ q = null; renderAll(); return; }
@@ -1627,6 +1658,7 @@ function renderMicLive(){
     if (Math.abs(MIC.cents) > CENTS_TOL) need.push("tuning " + MIC.cents + " cents (max ±" + CENTS_TOL + ")");
     const wait = Math.max(0, RECOMMIT_MS - (Date.now() - MIC.lastCommit));
     if (wait > 0) need.push("cooldown " + wait + "ms");
+    if (MIC.needOnset) need.unshift("a fresh pluck");
     d.textContent = "level " + MIC.level.toFixed(2) + " · clarity " + MIC.clarity.toFixed(2) +
       " · gate " + MIC.gate.toFixed(4) + (need.length ? "  —  waiting on: " + need.join(", ") : "  —  registering");
 
@@ -1668,7 +1700,7 @@ function renderMic(){
   [...document.querySelectorAll("[data-sens]")].forEach(c =>
     c.classList.toggle("on", c.dataset.sens === state.sens));
   $("micMsg").textContent = MIC.err ? MIC.err
-    : (MIC.ready ? "Listening. Single notes, clean tone — an unplugged electric is fine on High."
+    : (MIC.ready ? "Listening. One note at a time, clean tone. " + SENS_LABEL[state.sens][1] + "."
                  : "One-off browser permission. Nothing is recorded or sent anywhere.");
   $("micMsg").style.color = MIC.err ? "var(--red)" : "";
   renderMicLive();
