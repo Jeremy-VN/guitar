@@ -110,6 +110,13 @@ svg.board .hit:hover circle.hitc{fill:#5aa9e6;fill-opacity:.28;}
 .meter{height:8px;border-radius:5px;background:#2a2f3a;overflow:hidden;}
 .meter>i{display:block;height:100%;width:0;background:var(--green);transition:width .06s linear;}
 .meter>i.c2{background:var(--accent2);}
+.meter>i.c3{background:var(--accent);}
+.pausebtn{display:block;width:100%;margin-top:12px;cursor:pointer;font-family:inherit;
+  background:#3a2e12;color:var(--accent);border:1px solid #5a4a1e;border-radius:10px;
+  padding:14px;font-size:16px;font-weight:700;transition:.12s;}
+.pausebtn:hover{background:#4a3a16;}
+.pausebtn.paused{background:#123020;color:var(--green);border-color:#1e4a30;}
+.mic.paused{border-color:#1e4a30;background:#101a14;}
 
 /* ---- buttons ---- */
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
@@ -235,8 +242,11 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid 
     <div class="mic-bars">
       <span class="blab">Signal</span><div class="meter"><i id="micLevel"></i></div>
       <span class="blab">Confidence</span><div class="meter"><i id="micClarity" class="c2"></i></div>
+      <span class="blab">Agreement</span><div class="meter"><i id="micAgree" class="c3"></i></div>
     </div>
   </div>
+  <button class="pausebtn" id="micPause" style="display:none">&#9208;&#65038; Pause listening</button>
+  <p class="sub" id="micDiag" style="font-size:12.5px;font-family:'SF Mono',ui-monospace,monospace;margin:8px 0 0;"></p>
   <div class="row" id="sensRow" style="margin-top:10px;display:none">
     <span style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Sensitivity</span>
     <div class="chips">
@@ -244,7 +254,8 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid 
       <div class="chip on" data-sens="high">High</div>
       <div class="chip" data-sens="max">Max</div>
     </div>
-    <span class="sub" style="font-size:13px;">High suits an unplugged electric. Max if it still won't hear you.</span>
+    <button class="btn" id="micRec">&#9210; Record 10 s to send me</button>
+    <span class="sub" id="recMsg" style="font-size:13px;"></span>
   </div>
 </div>
 
@@ -578,7 +589,7 @@ function pluck(midi, force){
   if (!state.sound && !force) return;
   /* stop the detector hearing our own speaker output */
   MIC.muteUntil = Date.now() + 1400;
-  MIC.run = [];
+  MIC.hist = [];
   if (state.tone === "guitar" && gtrPlay(midi)) return;
   try {
     ac();
@@ -647,9 +658,9 @@ function seqAt(s, f){
    ============================================================ */
 const MIC = {
   ready:false, starting:false, stream:null, an:null, raw:null,
-  raf:0, run:[], runStart:0, armed:true, muteUntil:0,
-  midi:null, cents:0, clarity:0, level:0, err:"",
-  gate:0.001
+  raf:0, hist:[], lastCommit:0, agree:0, span:0, muteUntil:0, paused:false,
+  midi:null, cents:0, clarity:0, level:0, err:"", gate:0.001,
+  rec:null, recNode:null, recBuf:[], recUntil:0
 };
 
 /* An unplugged electric across a desk sits near -30 dB. The detector is amplitude-
@@ -664,10 +675,17 @@ const SENS = { normal:0.0040, high:0.0010, max:0.0003 };
 const DEC = 4;                    /* decimation factor */
 const MIC_FFT = 4096;             /* native-rate window -> 1024 samples at ~11 kHz */
 const CLARITY_MIN = 0.90;
-/* 6 agreeing frames spanning >=100 ms. Single frames are ~87% reliable on a low E
-   (harmonic-rich, weak fundamental); consecutive agreement over a fresh window is not. */
+/* Commit on a MAJORITY over a short rolling window, not a run of identical frames.
+   Requiring 6 consecutive identical readings means one stray frame — an octave flip
+   on a low string, a fret buzz — resets the count, so the note shows on screen
+   continuously and never registers. A 70% majority over the last 450 ms tolerates
+   that while still needing real agreement. */
 const STABLE_FRAMES = 6;
 const STABLE_MS = 100;
+const HIST_MS = 450;
+const AGREE = 0.70;
+const RECOMMIT_MS = 900;    /* debounce between commits — replaces "wait for silence",
+                               which never happened in a room with any background noise */
 const CENTS_TOL = 50;             /* "forgiving" — half a semitone either way */
 const f2m = f => 69 + 12 * Math.log2(f / 440);
 
@@ -765,13 +783,61 @@ function micStart(){
     renderMic();
   });
 }
+/* ---- capture the real thing: 10 s of raw audio, saved as a WAV ---- */
+function micRecord(){
+  if (!MIC.ready || MIC.rec) return;
+  try {
+    const c = ac();
+    MIC.recBuf = [];
+    const node = c.createScriptProcessor(4096, 1, 1);
+    const sink = c.createGain(); sink.gain.value = 0;      /* keeps the node pulled, stays silent */
+    node.onaudioprocess = e => {
+      MIC.recBuf.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+      if (Date.now() > MIC.recUntil) micRecordStop();
+    };
+    MIC.recSrc = c.createMediaStreamSource(MIC.stream);
+    MIC.recSrc.connect(node); node.connect(sink); sink.connect(c.destination);
+    MIC.recNode = node;
+    MIC.rec = true;
+    MIC.recUntil = Date.now() + 10000;
+    renderMic();
+  } catch (e){ $("recMsg").textContent = "Couldn't start recording."; }
+}
+function micRecordStop(){
+  if (!MIC.rec) return;
+  MIC.rec = false;
+  try { MIC.recNode.disconnect(); MIC.recSrc.disconnect(); } catch(e){}
+  let n = 0;
+  for (const b of MIC.recBuf) n += b.length;
+  const pcm = new Float32Array(n);
+  let o = 0;
+  for (const b of MIC.recBuf){ pcm.set(b, o); o += b.length; }
+  const sr = actx.sampleRate;
+  /* 32-bit float WAV — no compression, so nothing about the signal is lost */
+  const buf = new ArrayBuffer(44 + pcm.length * 4), v = new DataView(buf);
+  const wr = (off, str) => { for (let i = 0; i < str.length; i++) v.setUint8(off + i, str.charCodeAt(i)); };
+  wr(0,"RIFF"); v.setUint32(4, 36 + pcm.length*4, true); wr(8,"WAVEfmt ");
+  v.setUint32(16,16,true); v.setUint16(20,3,true); v.setUint16(22,1,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*4,true); v.setUint16(32,4,true); v.setUint16(34,32,true);
+  wr(36,"data"); v.setUint32(40, pcm.length*4, true);
+  for (let i = 0; i < pcm.length; i++) v.setFloat32(44 + i*4, pcm[i], true);
+  const url = URL.createObjectURL(new Blob([buf], {type:"audio/wav"}));
+  const a = document.createElement("a");
+  a.href = url; a.download = "guitar-capture-" + sr + "hz.wav";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  MIC.recBuf = [];
+  $("recMsg").textContent = (pcm.length/sr).toFixed(1) + " s saved — send me that file.";
+  renderMic();
+}
+
 function micStop(){
   if (MIC.raf) cancelAnimationFrame(MIC.raf);
-  MIC.raf = 0; MIC.run = []; MIC.midi = null; MIC.clarity = 0; MIC.level = 0;
+  MIC.raf = 0; MIC.hist = []; MIC.midi = null; MIC.clarity = 0; MIC.level = 0; MIC.agree = 0;
 }
 function micLoop(){
   MIC.raf = requestAnimationFrame(micLoop);
-  if (!MIC.ready || state.mode !== "play") return;
+  if (!MIC.ready || state.mode !== "play" || MIC.paused) return;
   MIC.an.getFloatTimeDomainData(MIC.raw);
   const sr = actx.sampleRate;
   const dec = conditionBlock(MIC.raw, sr);
@@ -782,12 +848,14 @@ function micLoop(){
   MIC.clarity = r.clarity;
 
   /* ignore our own speaker output */
-  if (Date.now() < MIC.muteUntil){ MIC.run = []; renderMicLive(); return; }
+  if (Date.now() < MIC.muteUntil){ MIC.hist = []; renderMicLive(); return; }
 
   if (!r.freq || r.clarity < CLARITY_MIN || r.rms < MIC.gate){
-    MIC.run = [];
-    if (r.rms < MIC.gate) MIC.armed = true;      /* silence re-arms for the next pluck */
     MIC.midi = null;
+    /* don't wipe history on a single bad frame — it ages out on its own */
+    const t = Date.now();
+    while (MIC.hist.length && t - MIC.hist[0].t > HIST_MS) MIC.hist.shift();
+    MIC.agree = 0;
     renderMicLive();
     return;
   }
@@ -795,13 +863,26 @@ function micLoop(){
   const m = Math.round(exact);
   MIC.midi = m;
   MIC.cents = Math.round((exact - m) * 100);
-  if (MIC.run.length && MIC.run[MIC.run.length - 1] !== m) MIC.run = [];
-  if (!MIC.run.length) MIC.runStart = Date.now();
-  MIC.run.push(m);
-  if (MIC.run.length >= STABLE_FRAMES && (Date.now() - MIC.runStart) >= STABLE_MS &&
-      MIC.armed && Math.abs(MIC.cents) <= CENTS_TOL){
-    MIC.armed = false;
-    onNoteHeard(m);
+  const now = Date.now();
+  MIC.hist.push({m:m, t:now});
+  while (MIC.hist.length && now - MIC.hist[0].t > HIST_MS) MIC.hist.shift();
+
+  /* majority vote across the window */
+  const counts = {};
+  let topM = m, topN = 0;
+  for (const h of MIC.hist){
+    counts[h.m] = (counts[h.m] || 0) + 1;
+    if (counts[h.m] > topN){ topN = counts[h.m]; topM = h.m; }
+  }
+  MIC.agree = MIC.hist.length ? topN / MIC.hist.length : 0;
+  MIC.span = MIC.hist.length ? now - MIC.hist[0].t : 0;
+
+  if (MIC.hist.length >= STABLE_FRAMES && MIC.span >= STABLE_MS &&
+      MIC.agree >= AGREE && (now - MIC.lastCommit) > RECOMMIT_MS &&
+      Math.abs(MIC.cents) <= CENTS_TOL){
+    MIC.lastCommit = now;
+    MIC.hist = [];
+    onNoteHeard(topM);
   }
   renderMicLive();
 }
@@ -1082,7 +1163,7 @@ function newQuestion(){
   clearTimeout(advanceTimer);
   if (seq){ if (seq.timer) clearTimeout(seq.timer); seq = null; }
   answerLocked = false;
-  MIC.run = []; MIC.armed = true; MIC.midi = null;
+  MIC.hist = []; MIC.lastCommit = 0; MIC.midi = null; MIC.agree = 0;
   const pool = activePositions(null);
   if (!pool.length){ q = null; renderAll(); return; }
 
@@ -1107,7 +1188,7 @@ function newQuestion(){
     }
     lastKey = String(pc);
     q = {pc:pc, targets:activePositions(pc), t0:Date.now(), done:false, wasRight:false};
-    MIC.armed = true; MIC.run = [];
+    MIC.hist = []; MIC.lastCommit = 0;
   } else if (state.mode === "find"){
     const notes = activeNotes();
     if (!notes.length){ q = null; renderAll(); return; }
@@ -1519,18 +1600,35 @@ function hearTargetPc(){
 
 function renderMicLive(){
   if (!MIC.ready) return;
-  const lv = $("micLevel"), cl = $("micClarity");
+  const lv = $("micLevel"), cl = $("micClarity"), ag = $("micAgree");
   if (lv) lv.style.width = Math.round(MIC.level * 100) + "%";
   if (cl) cl.style.width = Math.round(Math.max(0, MIC.clarity) * 100) + "%";
+  if (ag) ag.style.width = Math.round(MIC.agree * 100) + "%";
   const n = $("micNote"), c = $("micCents");
   if (!n) return;
-  if (MIC.midi == null){
+  if (MIC.paused){
+    n.textContent = "❙❙"; n.className = "mn"; c.textContent = "paused";
+  } else if (MIC.midi == null){
     n.textContent = "–"; n.className = "mn"; c.textContent = "waiting for a note";
   } else {
     n.textContent = SHARP[MIC.midi % 12] + (Math.floor(MIC.midi / 12) - 1);
     n.className = "mn" + (MIC.clarity >= CLARITY_MIN ? " lock" : "");
     c.textContent = (MIC.cents > 0 ? "+" : "") + MIC.cents + " cents" +
                     (Math.abs(MIC.cents) > 25 ? "  — check your tuning" : "");
+  }
+  /* say out loud why it hasn't registered, rather than leaving you guessing */
+  const d = $("micDiag");
+  if (d){
+    if (MIC.paused){ d.textContent = "paused — nothing is being listened to"; return; }
+    const need = [];
+    if (MIC.hist.length < STABLE_FRAMES) need.push("frames " + MIC.hist.length + "/" + STABLE_FRAMES);
+    if (MIC.span < STABLE_MS) need.push("span " + MIC.span + "/" + STABLE_MS + "ms");
+    if (MIC.agree < AGREE) need.push("agreement " + Math.round(MIC.agree*100) + "/" + Math.round(AGREE*100) + "%");
+    if (Math.abs(MIC.cents) > CENTS_TOL) need.push("tuning " + MIC.cents + " cents (max ±" + CENTS_TOL + ")");
+    const wait = Math.max(0, RECOMMIT_MS - (Date.now() - MIC.lastCommit));
+    if (wait > 0) need.push("cooldown " + wait + "ms");
+    d.textContent = "level " + MIC.level.toFixed(2) + " · clarity " + MIC.clarity.toFixed(2) +
+      " · gate " + MIC.gate.toFixed(4) + (need.length ? "  —  waiting on: " + need.join(", ") : "  —  registering");
   }
 }
 
@@ -1543,6 +1641,13 @@ function renderMic(){
   $("micStart").textContent = MIC.starting ? "Starting…" : "Enable microphone";
   $("micLive").style.display = MIC.ready ? "" : "none";
   $("sensRow").style.display = MIC.ready ? "" : "none";
+  const pb = $("micPause");
+  pb.style.display = MIC.ready ? "" : "none";
+  pb.className = "pausebtn" + (MIC.paused ? " paused" : "");
+  pb.innerHTML = MIC.paused ? "&#9654;&#65038; Resume listening" : "&#9208;&#65038; Pause listening";
+  panel.className += MIC.paused ? " paused" : "";
+  $("micRec").textContent = MIC.rec ? "● recording…" : "⏺ Record 10 s to send me";
+  $("micRec").disabled = !!MIC.rec;
   [...document.querySelectorAll("[data-sens]")].forEach(c =>
     c.classList.toggle("on", c.dataset.sens === state.sens));
   $("micMsg").textContent = MIC.err ? MIC.err
@@ -1711,6 +1816,13 @@ $("optNames").addEventListener("change", e => { state.names = e.target.checked; 
 $("optAuto").addEventListener("change", e => { state.auto = e.target.checked; save(); });
 $("optAdaptive").addEventListener("change", e => { state.adaptive = e.target.checked; save(); });
 $("micStart").addEventListener("click", micStart);
+$("micPause").addEventListener("click", () => {
+  MIC.paused = !MIC.paused;
+  MIC.hist = []; MIC.midi = null; MIC.agree = 0; MIC.level = 0; MIC.clarity = 0;
+  if (!MIC.paused && MIC.ready && !MIC.raf) micLoop();
+  renderMic();
+});
+$("micRec").addEventListener("click", micRecord);
 document.addEventListener("click", e => {
   const c = e.target.closest("[data-sens]"); if (!c) return;
   state.sens = c.dataset.sens;
