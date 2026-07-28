@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fretboard Note Trainer</title>
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--panel2:#1e222b;--ink:#e8eaed;--muted:#9aa3b2;
+  --accent:#e0b341;--accent2:#5aa9e6;--green:#57c98b;--red:#e5736b;--line:#2a2f3a;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%;}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 18px 80px;}
+header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:20px;}
+h1{font-size:26px;margin:0 0 6px;line-height:1.25;}
+h2{font-size:18px;margin:30px 0 10px;padding-top:6px;border-top:1px solid var(--line);color:var(--accent);}
+.sub{color:var(--muted);font-size:14px;margin:0;}
+.back{display:inline-block;font-size:13.5px;margin-bottom:10px;color:var(--accent2);text-decoration:none;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:14px 0;}
+a{color:var(--accent2);}
+
+/* ---- level selector ---- */
+.levelbar{margin:18px 0 6px;}
+.lvl-lab{display:block;font-size:12.5px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.6px;font-weight:600;margin-bottom:8px;}
+.lvl-opts{display:flex;gap:8px;flex-wrap:wrap;}
+.lvl{flex:1 1 200px;cursor:pointer;user-select:none;background:var(--panel);
+  border:1px solid var(--line);border-radius:10px;padding:11px 14px;transition:.15s;}
+.lvl:hover{border-color:#3d4657;}
+.lvl b{display:block;font-size:15px;color:var(--muted);}
+.lvl span{display:block;font-size:12.5px;color:#6f7891;margin-top:1px;}
+.lvl.on{background:#2a2211;border-color:var(--accent);}
+.lvl.on b{color:var(--accent);}
+.lvl.on span{color:#a9976a;}
+
+/* ---- practice prompter banner ---- */
+.banner{display:none;margin:14px 0 0;border-radius:12px;padding:12px 16px;
+  font-size:14.5px;border:1px solid var(--line);background:var(--panel);}
+.banner.show{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.banner .b-main{flex:1 1 260px;}
+.banner .b-title{font-weight:700;font-size:15px;display:block;}
+.banner .b-sub{color:var(--muted);font-size:13px;}
+.banner.due{background:#2a2211;border-color:#5a4a1e;}
+.banner.due .b-title{color:var(--accent);}
+.banner.done{background:#12241a;border-color:#1e4a30;}
+.banner.done .b-title{color:var(--green);}
+.prog{flex:0 0 auto;min-width:150px;}
+.prog .track{height:8px;border-radius:5px;background:#2a2f3a;overflow:hidden;}
+.prog .track>i{display:block;height:100%;background:var(--accent);transition:width .3s;}
+.prog .ptxt{font-size:12px;color:var(--muted);margin-top:3px;display:block;text-align:right;}
+
+/* ---- mode tabs ---- */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 6px;}
+.tab{flex:1 1 auto;min-width:150px;text-align:center;cursor:pointer;user-select:none;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  font-size:14.5px;font-weight:600;color:var(--muted);transition:.15s;}
+.tab:hover{border-color:#3d4657;color:var(--ink);}
+.tab.on{background:#1b2434;border-color:var(--accent2);color:var(--accent2);}
+.tab .t2{display:block;font-size:12px;font-weight:400;color:var(--muted);margin-top:2px;}
+
+/* ---- prompt ---- */
+.prompt{background:linear-gradient(180deg,#1b2030,#171a21);border:1px solid #2f3950;border-radius:12px;
+  padding:14px 16px;margin:14px 0;min-height:78px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.prompt .big{font-size:30px;font-weight:700;letter-spacing:.5px;line-height:1.1;}
+.prompt .txt{flex:1 1 240px;min-width:200px;}
+.prompt .hint{color:var(--muted);font-size:13.5px;display:block;margin-top:2px;}
+.fb{font-size:15px;font-weight:600;padding:4px 12px;border-radius:20px;white-space:nowrap;}
+.fb.ok{background:#123020;color:var(--green);border:1px solid #1e4a30;}
+.fb.no{background:#3a1c1a;color:var(--red);border:1px solid #5c2d29;}
+.fb.info{background:#2a2f3a;color:var(--muted);border:1px solid #3a4152;}
+
+/* ---- fretboard ---- */
+.boardwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;padding:10px 6px;margin:14px 0;}
+svg.board{display:block;min-width:640px;width:100%;height:auto;}
+svg.board .hit{cursor:pointer;}
+svg.board .hit:hover circle.hitc{fill:#5aa9e6;fill-opacity:.28;}
+
+/* ---- answer buttons ---- */
+.answers{display:grid;gap:6px;margin:14px 0;grid-template-columns:repeat(6,1fr);}
+.answers.bas{grid-template-columns:repeat(7,1fr);}   /* A B C D E F G on one row */
+.answers.adv{grid-template-columns:repeat(6,1fr);}   /* A…D then D♯…G♯ */
+.ans{cursor:pointer;user-select:none;background:var(--panel2);border:1px solid var(--line);
+  border-radius:9px;padding:8px 3px;text-align:center;font-weight:700;font-size:15px;
+  font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;transition:.12s;}
+.ans:hover{border-color:var(--accent2);background:#232b39;}
+.ans:active{transform:scale(.96);}
+.ans.acc{font-size:12.5px;}
+.ans .k{display:block;font-size:9.5px;color:var(--muted);font-weight:400;
+  font-family:inherit;margin-top:1px;letter-spacing:.2px;}
+.ans.right{background:#123020;border-color:var(--green);color:var(--green);}
+.ans.wrong{background:#3a1c1a;border-color:var(--red);color:var(--red);}
+.ans.dim{opacity:.32;}
+
+/* ---- microphone panel ---- */
+.mic{display:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:13px 16px;margin:12px 0;}
+.mic.show{display:block;}
+.mic.listening{border-color:#2f4a6b;background:#141c28;}
+.mic-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.mic-live{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-top:4px;}
+.mic-note{min-width:140px;}
+.mic-note .mn{font-size:34px;font-weight:700;line-height:1.1;font-family:"SF Mono",ui-monospace,Menlo,monospace;
+  color:var(--muted);}
+.mic-note .mn.lock{color:var(--accent2);}
+.mic-note .mc{display:block;font-size:12.5px;color:var(--muted);font-family:"SF Mono",ui-monospace,monospace;}
+.mic-bars{flex:1 1 220px;display:grid;grid-template-columns:auto 1fr;gap:5px 10px;align-items:center;}
+.mic-bars .blab{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.meter{height:8px;border-radius:5px;background:#2a2f3a;overflow:hidden;}
+.meter>i{display:block;height:100%;width:0;background:var(--green);transition:width .06s linear;}
+.meter>i.c2{background:var(--accent2);}
+
+/* ---- buttons ---- */
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+button.btn{cursor:pointer;background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+  border-radius:9px;padding:8px 14px;font-size:14px;font-weight:600;font-family:inherit;transition:.12s;}
+button.btn:hover{border-color:var(--accent2);}
+button.btn.primary{background:#1b2434;border-color:var(--accent2);color:var(--accent2);}
+
+/* ---- stats ---- */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:14px 0;}
+@media(max-width:700px){.stats{grid-template-columns:repeat(3,1fr);}}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;}
+.stat .v{font-size:22px;font-weight:700;color:var(--accent);line-height:1.2;}
+.stat .l{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+
+/* ---- settings ---- */
+details.set{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:0;margin:14px 0;}
+details.set>summary{cursor:pointer;padding:12px 16px;font-weight:600;color:var(--accent);list-style:none;}
+details.set>summary::-webkit-details-marker{display:none}
+details.set>summary::before{content:"\25B8 ";color:var(--muted);}
+details.set[open]>summary::before{content:"\25BE ";}
+.setbody{padding:0 16px 16px;border-top:1px solid var(--line);}
+.grp{margin:14px 0 0;}
+.grp>.lab{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;
+  font-weight:600;margin-bottom:7px;display:block;}
+.chips{display:flex;gap:6px;flex-wrap:wrap;}
+.chip{cursor:pointer;user-select:none;background:var(--panel2);border:1px solid var(--line);
+  border-radius:8px;padding:6px 11px;font-size:13.5px;font-weight:600;color:var(--muted);transition:.12s;
+  font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;}
+.chip:hover{border-color:#3d4657;}
+.chip.on{background:#1b2434;border-color:var(--accent2);color:var(--accent2);}
+.chip.mini{font-size:12px;padding:5px 9px;font-family:inherit;}
+.num{background:#0c0e13;color:var(--ink);border:1px solid var(--line);border-radius:8px;
+  padding:6px 8px;width:64px;font-size:14px;font-family:inherit;}
+label.sw{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:14px;margin:0 16px 6px 0;}
+label.sw input{width:16px;height:16px;accent-color:#5aa9e6;cursor:pointer;}
+.warn{color:var(--red);font-size:13.5px;margin-top:8px;}
+
+/* ---- breakdown table ---- */
+table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px;}
+th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;}
+th{background:var(--panel2);color:var(--accent);font-weight:600;}
+td.mono{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;}
+.bar{height:7px;border-radius:4px;background:#2a2f3a;overflow:hidden;min-width:60px;}
+.bar>i{display:block;height:100%;background:var(--green);}
+footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px;}
+.kbd{background:#232833;border:1px solid var(--line);border-radius:5px;padding:1px 6px;
+  font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;}
+
+.scrollhint{display:none;font-size:12px;color:var(--muted);text-align:right;margin:-6px 2px 4px;}
+@media(max-width:560px){
+  .wrap{padding:20px 12px 60px;}
+  h1{font-size:21px;}
+  .tabs{gap:6px;}
+  .tab{min-width:0;flex:1 1 0;padding:9px 6px;font-size:13px;}
+  .tab .t2{display:none;}
+  .prompt{padding:12px 13px;min-height:0;}
+  .prompt .big{font-size:22px;}
+  .ans{padding:9px 1px;font-size:14px;}
+  .ans.acc{font-size:11px;}
+  /* 12 accidental labels won't fit six-across on a phone */
+  .answers.adv{grid-template-columns:repeat(3,1fr);}
+  .stats{grid-template-columns:repeat(3,1fr);}
+  .scrollhint{display:block;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <a class="back" href="index.html">&larr; Practice tools</a>
+  <h1>&#127928; Fretboard Note Trainer</h1>
+  <p class="sub">Standard tuning &middot; high <b>e</b> at the top, low <b>E</b> at the bottom &middot; notes repeat 12 frets up</p>
+</header>
+
+<div class="levelbar">
+  <span class="lvl-lab">Level</span>
+  <div class="lvl-opts">
+    <div class="lvl on" data-level="basic">
+      <b>Basic</b><span>natural notes only &mdash; A B C D E F G</span>
+    </div>
+    <div class="lvl" data-level="advanced">
+      <b>Advanced</b><span>all 12 &mdash; adds the sharps and flats</span>
+    </div>
+    <div class="lvl" data-level="custom">
+      <b>Custom</b><span>pick your own notes below</span>
+    </div>
+  </div>
+</div>
+
+<div class="banner" id="banner"></div>
+
+<div class="tabs" id="tabs">
+  <div class="tab on" data-mode="name">Name the Note<span class="t2">a dot appears &rarr; you name it</span></div>
+  <div class="tab" data-mode="find">Find the Note<span class="t2">a note is named &rarr; you find every one</span></div>
+  <div class="tab" data-mode="learn">Learn<span class="t2">no test &mdash; just show me the board</span></div>
+</div>
+
+<div class="prompt" id="prompt"></div>
+
+<div class="boardwrap" id="boardwrap"><svg class="board" id="board" xmlns="http://www.w3.org/2000/svg"></svg></div>
+<p class="scrollhint">&#8592; the board scrolls sideways &#8594;</p>
+
+<div class="answers" id="answers"></div>
+
+<div class="row" style="margin:12px 0 8px;">
+  <button class="btn primary" id="btnNext">Next question &rarr;</button>
+  <button class="btn" id="btnReveal">Reveal answer</button>
+  <button class="btn" id="btnHear">&#9654; Hear every one</button>
+</div>
+<div class="row" id="inputRow" style="margin:0 0 8px;">
+  <span style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Input</span>
+  <div class="chips">
+    <div class="chip on" id="inClick">Click a button</div>
+    <div class="chip" id="inPlay">&#127908; Play it on the guitar</div>
+  </div>
+</div>
+
+<div class="mic" id="micPanel">
+  <div class="mic-head">
+    <button class="btn primary" id="micStart">Enable microphone</button>
+    <span class="sub" id="micMsg" style="font-size:13.5px;"></span>
+  </div>
+  <div class="mic-live" id="micLive" style="display:none">
+    <div class="mic-note">
+      <span class="mn" id="micNote">&ndash;</span>
+      <span class="mc" id="micCents"></span>
+    </div>
+    <div class="mic-bars">
+      <span class="blab">Signal</span><div class="meter"><i id="micLevel"></i></div>
+      <span class="blab">Confidence</span><div class="meter"><i id="micClarity" class="c2"></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="row" style="margin:0 0 8px;">
+  <span style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Tone</span>
+  <div class="chips">
+    <div class="chip on" id="toneSynth">Synth</div>
+    <div class="chip" id="toneGuitar">Real guitar</div>
+  </div>
+  <span class="sub" id="toneStatus" style="font-size:13px;"></span>
+</div>
+<div class="row" style="margin:0 0 4px;">
+  <label class="sw"><input type="checkbox" id="optSound" checked> Sound on</label>
+  <label class="sw"><input type="checkbox" id="optNames"> Show all note names</label>
+  <label class="sw"><input type="checkbox" id="optAuto" checked> Auto-advance</label>
+  <label class="sw"><input type="checkbox" id="optHearAll" checked> Play every position when I finish (Find mode)</label>
+</div>
+<p class="sub" style="margin:2px 0 0;font-size:13px;">Tap any position on the board at any time to hear that note.</p>
+
+<div class="stats" id="stats"></div>
+
+<details class="set" id="setPanel" open>
+  <summary>Test options &mdash; strings, frets, notes</summary>
+  <div class="setbody">
+
+    <div class="grp">
+      <span class="lab">Strings to test</span>
+      <div class="chips" id="stringChips"></div>
+      <div class="chips" style="margin-top:7px;">
+        <div class="chip mini" data-preset="str-all">All 6</div>
+        <div class="chip mini" data-preset="str-low">Low 3 (E A D)</div>
+        <div class="chip mini" data-preset="str-high">High 3 (G B e)</div>
+        <div class="chip mini" data-preset="str-56">Strings 5 &amp; 6 only</div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <span class="lab">Fret range</span>
+      <div class="row">
+        <span style="font-size:14px;color:var(--muted)">From</span>
+        <input class="num" type="number" id="fretMin" min="0" max="24" value="0">
+        <span style="font-size:14px;color:var(--muted)">to</span>
+        <input class="num" type="number" id="fretMax" min="0" max="24" value="12">
+        <span style="font-size:13.5px;color:var(--muted)">(0 = open string)</span>
+      </div>
+      <div class="chips" style="margin-top:8px;">
+        <div class="chip mini" data-preset="fr-0-5">0&ndash;5</div>
+        <div class="chip mini" data-preset="fr-0-12">0&ndash;12</div>
+        <div class="chip mini" data-preset="fr-5-12">5&ndash;12</div>
+        <div class="chip mini" data-preset="fr-0-15">0&ndash;15</div>
+        <div class="chip mini" data-preset="fr-12-24">12&ndash;24</div>
+        <div class="chip mini" data-preset="fr-0-24">0&ndash;24</div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <span class="lab">Notes to test</span>
+      <div class="chips" id="noteChips"></div>
+      <div class="chips" style="margin-top:7px;">
+        <div class="chip mini" data-preset="n-all">All 12</div>
+        <div class="chip mini" data-preset="n-nat">Naturals only (7)</div>
+        <div class="chip mini" data-preset="n-acc">Accidentals only (5)</div>
+        <div class="chip mini" data-preset="n-none">Clear</div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <span class="lab">Difficulty</span>
+      <label class="sw"><input type="checkbox" id="optAdaptive"> Favour the notes I get wrong</label>
+      <label class="sw"><input type="checkbox" id="optFlats"> Prefer flat names (B&#9837; not A&#9839;)</label>
+      <label class="sw"><input type="checkbox" id="optHearOnShow"> Sound the note when the star appears (Name mode &mdash; makes it partly an ear test)</label>
+    </div>
+
+    <div class="warn" id="setWarn" style="display:none"></div>
+  </div>
+</details>
+
+<h2>Practice history</h2>
+<div class="card">
+  <div class="row" style="margin-bottom:10px;">
+    <span style="font-size:14px;color:var(--muted)">Daily target</span>
+    <input class="num" type="number" id="goalQ" min="10" max="500" step="10" value="80" style="width:76px">
+    <span style="font-size:14px;color:var(--muted)">questions, across</span>
+    <input class="num" type="number" id="goalS" min="1" max="6" value="2" style="width:60px">
+    <span style="font-size:14px;color:var(--muted)">sessions</span>
+    <span class="sub" style="font-size:13px;">&mdash; two short sessions beat one long one</span>
+  </div>
+  <div id="history"></div>
+</div>
+
+<h2>Where you're weak</h2>
+<div class="card">
+  <div class="row" style="margin-bottom:8px;">
+    <button class="btn" id="btnResetStats">Reset all stats</button>
+    <span class="sub" id="persistNote"></span>
+  </div>
+  <div id="breakdown"></div>
+</div>
+
+<footer>
+  Keyboard: <span class="kbd">A</span>&ndash;<span class="kbd">G</span> for naturals,
+  <span class="kbd">Shift</span>+letter for the sharp (Shift+C = C&#9839;),
+  <span class="kbd">Space</span> for next, <span class="kbd">?</span> to reveal.
+  Either name is accepted for accidentals &mdash; A&#9839; and B&#9837; both count.
+</footer>
+
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   MUSIC MODEL
+   String index 0 = high e (string 1) ... 5 = low E (string 6)
+   ============================================================ */
+const OPEN_PC   = [4, 11, 7, 2, 9, 4];              // pitch class of each open string
+const OPEN_MIDI = [64, 59, 55, 50, 45, 40];         // e4 B3 G3 D3 A2 E2
+const STR_LABEL = ["e", "B", "G", "D", "A", "E"];   // top to bottom
+const STR_NUM   = [1, 2, 3, 4, 5, 6];
+const SHARP = ["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
+const FLAT  = ["C","D♭","D","E♭","E","F","G♭","G","A♭","A","B♭","B"];
+const IS_ACC = [0,1,0,1,0,0,1,0,1,0,1,0];
+const MARKERS = [3,5,7,9,15,17,19,21];
+const DOUBLE  = [12,24];
+
+const pcAt = (s, f) => (OPEN_PC[s] + f) % 12;
+function pcName(pc){
+  if (!IS_ACC[pc]) return SHARP[pc];
+  return state.flats ? FLAT[pc] : SHARP[pc];
+}
+function pcNameBoth(pc){
+  return IS_ACC[pc] ? SHARP[pc] + "/" + FLAT[pc] : SHARP[pc];
+}
+const pcColour = (pc, a) => "hsl(" + (pc * 30) + ",52%," + (a ? 52 : 44) + "%)";
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const DEF = {
+  mode: "name",
+  strings: [true,true,true,true,true,true],
+  fretMin: 0, fretMax: 12,
+  /* starts at Basic: the seven natural notes only */
+  notes: [true,false,true,false,true,true,false,true,false,true,false,true],
+  sound: true, names: false, auto: true, adaptive: false, flats: false,
+  hearAll: true, hearOnShow: false, tone: "synth",
+  level: "basic", goalQ: 80, goalS: 2, input: "click"
+};
+let state = JSON.parse(JSON.stringify(DEF));
+
+const blankStats = () => ({
+  attempts: 0, correct: 0, streak: 0, best: 0, totalMs: 0, timed: 0,
+  byPc: Array.from({length:12}, () => ({a:0, c:0, ms:0, timed:0})),
+  days: {},          /* "YYYY-MM-DD" -> { name:{...}, find:{...} }, each {a,c,ms,timed,sessions} */
+  lastTs: 0
+});
+
+/* local calendar date, not UTC — a 9pm Melbourne session belongs to that day */
+function todayKey(d){
+  const t = d || new Date();
+  return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") +
+         "-" + String(t.getDate()).padStart(2, "0");
+}
+function dayOffsetKey(n){
+  const t = new Date();
+  t.setDate(t.getDate() - n);
+  return todayKey(t);
+}
+function prettyDate(key){
+  const p = key.split("-").map(Number);
+  const d = new Date(p[0], p[1] - 1, p[2]);
+  const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const mons = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return days[d.getDay()] + " " + d.getDate() + " " + mons[d.getMonth()];
+}
+const SESSION_GAP_MS = 20 * 60 * 1000;   /* >20 min idle starts a new session */
+
+/* sessions are counted per DAY; questions/accuracy/time are broken down per drill */
+function dayObj(key){
+  if (!stats.days) stats.days = {};
+  if (!stats.days[key]) stats.days[key] = {sessions:0, modes:{}};
+  return stats.days[key];
+}
+function dayRec(key, mode){
+  const d = dayObj(key);
+  if (!d.modes[mode]) d.modes[mode] = {a:0, c:0, ms:0, timed:0};
+  return d.modes[mode];
+}
+function dayTotals(key){
+  const d = (stats.days || {})[key];
+  const t = {a:0, c:0, ms:0, timed:0, sessions:0};
+  if (!d || !d.modes) return t;
+  t.sessions = d.sessions || 0;
+  for (const m in d.modes){
+    t.a += d.modes[m].a; t.c += d.modes[m].c;
+    t.ms += d.modes[m].ms; t.timed += d.modes[m].timed;
+  }
+  return t;
+}
+/* consecutive days practised, ending today (or yesterday if today isn't done yet) */
+function practiceStreak(){
+  const start = dayTotals(dayOffsetKey(0)).a > 0 ? 0 : 1;
+  let n = 0;
+  for (let i = start; i < 400; i++){
+    if (dayTotals(dayOffsetKey(i)).a > 0) n++; else break;
+  }
+  return n;
+}
+function lastPracticeDay(){
+  for (let i = 0; i < 400; i++){
+    const k = dayOffsetKey(i);
+    if (dayTotals(k).a > 0) return {key:k, ago:i};
+  }
+  return null;
+}
+let stats = blankStats();
+let session = { attempts: 0, correct: 0 };
+
+/* localStorage is optional — the trainer works fully without it */
+let canPersist = false;
+try {
+  const k = "__fbt_test__";
+  window.localStorage.setItem(k, "1");
+  window.localStorage.removeItem(k);
+  canPersist = true;
+} catch (e) { canPersist = false; }
+
+function save(){
+  if (!canPersist) return;
+  try {
+    localStorage.setItem("fbt_stats", JSON.stringify(stats));
+    localStorage.setItem("fbt_state", JSON.stringify({
+      mode:state.mode, strings:state.strings, fretMin:state.fretMin, fretMax:state.fretMax,
+      notes:state.notes, sound:state.sound, names:state.names, auto:state.auto,
+      adaptive:state.adaptive, flats:state.flats,
+      hearAll:state.hearAll, hearOnShow:state.hearOnShow, tone:state.tone,
+      level:state.level, goalQ:state.goalQ, goalS:state.goalS, input:state.input
+    }));
+  } catch (e) {}
+}
+function load(){
+  if (!canPersist) return;
+  try {
+    const s = localStorage.getItem("fbt_stats");
+    if (s) {
+      const p = JSON.parse(s);
+      if (p && Array.isArray(p.byPc) && p.byPc.length === 12){
+        stats = p;
+        if (!stats.days) stats.days = {};
+        if (!stats.lastTs) stats.lastTs = 0;
+        /* older saves have no per-note timing — backfill so the table still renders */
+        stats.byPc.forEach(r => { if (r.ms == null) r.ms = 0; if (r.timed == null) r.timed = 0; });
+      }
+    }
+    const t = localStorage.getItem("fbt_state");
+    if (t) {
+      const p = JSON.parse(t);
+      if (p && Array.isArray(p.strings) && p.strings.length === 6 &&
+          Array.isArray(p.notes) && p.notes.length === 12) Object.assign(state, p);
+    }
+  } catch (e) {}
+}
+
+/* current question */
+let q = null;          // name mode: {s,f,pc,t0,done}   find mode: {pc,positions,found,t0,done}
+let answerLocked = false;
+let advanceTimer = null;
+
+/* ============================================================
+   ELEMENTS
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const elBoard = $("board"), elPrompt = $("prompt"), elAnswers = $("answers"),
+      elStats = $("stats"), elBreak = $("breakdown");
+
+/* ============================================================
+   AUDIO — Karplus-Strong pluck, no files needed
+   ============================================================ */
+let actx = null;
+function ac(){
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === "suspended") actx.resume();
+  return actx;
+}
+
+/* --- real guitar samples: chromatic D2-D5, University of Iowa acoustic guitar --- */
+const SAMP_MIN = 38, SAMP_MAX = 74;
+const SAMP_LETTERS = ["C","Cs","D","Ds","E","F","Fs","G","Gs","A","As","B"];
+const sampName = m => SAMP_LETTERS[m % 12] + (Math.floor(m / 12) - 1);
+const GTR = { buf:{}, tried:{}, status:"idle", loaded:0, total:SAMP_MAX - SAMP_MIN + 1 };
+
+function gtrFetch(m){
+  if (GTR.buf[m] || GTR.tried[m]) return Promise.resolve(GTR.buf[m] || null);
+  GTR.tried[m] = true;
+  return fetch("samples/" + sampName(m) + ".mp3")
+    .then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); })
+    .then(a => new Promise((res, rej) => ac().decodeAudioData(a, res, rej)))
+    .then(b => { GTR.buf[m] = b; GTR.loaded++; return b; })
+    .catch(() => { GTR.tried[m] = false; return null; });
+}
+function gtrLoadAll(){
+  if (GTR.status === "loading" || GTR.status === "ready") return;
+  GTR.status = "loading"; renderTone();
+  const jobs = [];
+  for (let m = SAMP_MIN; m <= SAMP_MAX; m++) jobs.push(gtrFetch(m));
+  Promise.all(jobs).then(rs => {
+    const got = rs.filter(Boolean).length;
+    GTR.status = got ? "ready" : "failed";
+    if (!got) state.tone = "synth";
+    renderTone();
+  });
+}
+function gtrPlay(midi){
+  let src = null;
+  for (let d = 0; d <= 14 && src === null; d++){
+    if (GTR.buf[midi - d]) src = midi - d;
+    else if (GTR.buf[midi + d]) src = midi + d;
+  }
+  if (src === null) return false;
+  try {
+    const c = ac(), n = c.createBufferSource(), g = c.createGain();
+    n.buffer = GTR.buf[src];
+    n.playbackRate.value = Math.pow(2, (midi - src) / 12);
+    g.gain.value = 0.85;
+    n.connect(g); g.connect(c.destination); n.start();
+    return true;
+  } catch (e) { return false; }
+}
+
+function pluck(midi, force){
+  if (!state.sound && !force) return;
+  /* stop the detector hearing our own speaker output */
+  MIC.muteUntil = Date.now() + 1400;
+  MIC.run = [];
+  if (state.tone === "guitar" && gtrPlay(midi)) return;
+  try {
+    ac();
+    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    const sr = actx.sampleRate, N = Math.max(2, Math.round(sr / freq));
+    const len = Math.round(sr * 1.5);
+    const buf = actx.createBuffer(1, len, sr), d = buf.getChannelData(0);
+    const ring = new Float32Array(N);
+    for (let i = 0; i < N; i++) ring[i] = Math.random() * 2 - 1;
+    let idx = 0;
+    for (let i = 0; i < len; i++){
+      const v = ring[idx];
+      ring[idx] = 0.9965 * 0.5 * (v + ring[(idx + 1) % N]);
+      d[i] = v;
+      idx = (idx + 1) % N;
+    }
+    for (let i = 0; i < len; i++){
+      const atk = Math.min(1, i / 120);
+      d[i] *= atk * Math.pow(1 - i / len, 1.4) * 0.42;
+    }
+    const src = actx.createBufferSource();
+    src.buffer = buf;
+    src.connect(actx.destination);
+    src.start();
+  } catch (e) {}
+}
+
+/* ---- sequential playback: hear every position of a note, low to high ---- */
+let seq = null;                       // {list:[{s,f}], i:-1, timer}
+function stopSeq(){
+  if (!seq) return;
+  if (seq.timer) clearTimeout(seq.timer);
+  seq = null;
+  renderBoard(); renderControls();
+}
+function playSeq(list, gap){
+  stopSeq();
+  if (!list || !list.length) return;
+  const sorted = list.slice().sort((a, b) =>
+    (OPEN_MIDI[a.s] + a.f) - (OPEN_MIDI[b.s] + b.f) || b.s - a.s);
+  seq = {list:sorted, i:-1, timer:null};
+  const g = gap || 700;
+  const step = () => {
+    if (!seq) return;
+    seq.i++;
+    if (seq.i >= seq.list.length){ stopSeq(); return; }
+    const p = seq.list[seq.i];
+    pluck(OPEN_MIDI[p.s] + p.f, true);
+    renderBoard(); renderControls();
+    seq.timer = setTimeout(step, g);
+  };
+  step();
+}
+/* the moving ring is hidden mid-question in Find mode, so listening never gives the answer away */
+function seqAt(s, f){
+  if (!seq || seq.i < 0 || !seq.list[seq.i]) return false;
+  if (state.mode === "find" && q && !q.done) return false;
+  return seq.list[seq.i].s === s && seq.list[seq.i].f === f;
+}
+
+/* ============================================================
+   MICROPHONE PITCH DETECTION
+   McLeod (normalised square difference) on a 93 ms window,
+   decimated 4x to ~11 kHz. Validated at 37/37 on real guitar
+   recordings, holding to 6 dB SNR with room noise + mains hum.
+   ============================================================ */
+const MIC = {
+  ready:false, starting:false, stream:null, an:null, raw:null,
+  raf:0, run:[], armed:true, muteUntil:0,
+  midi:null, cents:0, clarity:0, level:0, err:""
+};
+const DEC = 4;                    /* decimation factor */
+const MIC_FFT = 4096;             /* native-rate window -> 1024 samples at ~11 kHz */
+const CLARITY_MIN = 0.90;
+const RMS_GATE = 0.008;
+/* 6 agreeing frames spanning >=100 ms. Single frames are ~87% reliable on a low E
+   (harmonic-rich, weak fundamental); consecutive agreement over a fresh window is not. */
+const STABLE_FRAMES = 6;
+const STABLE_MS = 100;
+const CENTS_TOL = 50;             /* "forgiving" — half a semitone either way */
+const f2m = f => 69 + 12 * Math.log2(f / 440);
+
+/* one-pole high-pass (kills mains hum and rumble) then low-pass + decimate */
+function conditionBlock(src, sr){
+  const n = src.length;
+  const hpA = 1 / (1 + 2 * Math.PI * 65 / sr);
+  const hpOut = new Float32Array(n);
+  let px = 0, py = 0;
+  for (let i = 0; i < n; i++){ hpOut[i] = hpA * (py + src[i] - px); px = src[i]; py = hpOut[i]; }
+  const fc = 0.4 * (sr / DEC) / 2;
+  const a = Math.exp(-2 * Math.PI * fc / sr);
+  const out = new Float32Array(Math.floor(n / DEC));
+  let y = 0, j = 0;
+  for (let i = 0; i < n; i++){
+    y = (1 - a) * hpOut[i] + a * y;
+    if (i % DEC === 0 && j < out.length) out[j++] = y;
+  }
+  return out;
+}
+
+function detectPitch(buf, sr, minF, maxF){
+  const N = buf.length;
+  let rms = 0;
+  for (let i = 0; i < N; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / N);
+  if (rms < RMS_GATE) return {freq:null, clarity:0, rms:rms};
+  const maxLag = Math.min(N - 1, Math.floor(sr / (minF || 70)));
+  const minLag = Math.max(2, Math.floor(sr / (maxF || 1400)));
+  const nsdf = new Float32Array(maxLag + 2);
+  for (let lag = minLag; lag <= maxLag; lag++){
+    let ac = 0, m = 0;
+    for (let i = 0; i < N - lag; i++){
+      ac += buf[i] * buf[i + lag];
+      m  += buf[i] * buf[i] + buf[i + lag] * buf[i + lag];
+    }
+    nsdf[lag] = m > 0 ? 2 * ac / m : 0;
+  }
+  const peaks = [];
+  let pos = false;
+  for (let l = minLag; l < maxLag; l++){
+    if (!pos){ if (nsdf[l] > 0) pos = true; continue; }
+    if (nsdf[l] > nsdf[l - 1] && nsdf[l] >= nsdf[l + 1]) peaks.push(l);
+  }
+  if (!peaks.length) return {freq:null, clarity:0, rms:rms};
+  let best = peaks[0];
+  for (const p of peaks) if (nsdf[p] > nsdf[best]) best = p;
+  /* earliest peak within 85% of the strongest — this is what stops octave-down errors */
+  let chosen = best;
+  for (const p of peaks){ if (nsdf[p] >= 0.85 * nsdf[best]){ chosen = p; break; } }
+  const y1 = nsdf[chosen - 1], y2 = nsdf[chosen], y3 = nsdf[chosen + 1];
+  const d = (y3 - y1) / (2 * (2 * y2 - y1 - y3) || 1e-9);
+  return {freq: sr / (chosen + d), clarity: nsdf[chosen], rms:rms};
+}
+
+function micStart(){
+  if (MIC.ready || MIC.starting) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    MIC.err = "This browser won't give a page microphone access."; renderMic(); return;
+  }
+  MIC.starting = true; MIC.err = ""; renderMic();
+  navigator.mediaDevices.getUserMedia({audio:{
+    echoCancellation:false, noiseSuppression:false, autoGainControl:false
+  }}).then(stream => {
+    const c = ac();
+    MIC.stream = stream;
+    const src = c.createMediaStreamSource(stream);
+    const an = c.createAnalyser();
+    an.fftSize = MIC_FFT;
+    an.smoothingTimeConstant = 0;
+    src.connect(an);                       /* deliberately not connected to output — no feedback */
+    MIC.an = an;
+    MIC.raw = new Float32Array(MIC_FFT);
+    MIC.ready = true; MIC.starting = false;
+    renderMic();
+    micLoop();
+  }).catch(e => {
+    MIC.starting = false;
+    MIC.err = (e && e.name === "NotAllowedError")
+      ? "Microphone blocked. Allow it in the address bar, then press again."
+      : "Couldn't open the microphone (" + ((e && e.name) || "error") + ").";
+    renderMic();
+  });
+}
+function micStop(){
+  if (MIC.raf) cancelAnimationFrame(MIC.raf);
+  MIC.raf = 0; MIC.run = []; MIC.midi = null; MIC.clarity = 0; MIC.level = 0;
+}
+function micLoop(){
+  MIC.raf = requestAnimationFrame(micLoop);
+  if (!MIC.ready || state.input !== "play" || state.mode !== "name") return;
+  MIC.an.getFloatTimeDomainData(MIC.raw);
+  const sr = actx.sampleRate;
+  const dec = conditionBlock(MIC.raw, sr);
+  const r = detectPitch(dec, sr / DEC, 70, 1400);
+  MIC.level = Math.min(1, r.rms * 14);
+  MIC.clarity = r.clarity;
+
+  /* ignore our own speaker output */
+  if (Date.now() < MIC.muteUntil){ MIC.run = []; renderMicLive(); return; }
+
+  if (!r.freq || r.clarity < CLARITY_MIN){
+    MIC.run = [];
+    if (r.rms < RMS_GATE) MIC.armed = true;      /* silence re-arms for the next pluck */
+    MIC.midi = null;
+    renderMicLive();
+    return;
+  }
+  const exact = f2m(r.freq);
+  const m = Math.round(exact);
+  MIC.midi = m;
+  MIC.cents = Math.round((exact - m) * 100);
+  if (MIC.run.length && MIC.run[MIC.run.length - 1] !== m) MIC.run = [];
+  if (!MIC.run.length) MIC.runStart = Date.now();
+  MIC.run.push(m);
+  if (MIC.run.length >= STABLE_FRAMES && (Date.now() - MIC.runStart) >= STABLE_MS &&
+      MIC.armed && Math.abs(MIC.cents) <= CENTS_TOL){
+    MIC.armed = false;
+    onNoteHeard(m);
+  }
+  renderMicLive();
+}
+
+/* every position in the drawn range that produces this exact pitch */
+function positionsForMidi(m){
+  const lo = Math.min(state.fretMin, state.fretMax), hi = Math.max(state.fretMin, state.fretMax);
+  const out = [];
+  for (let s = 0; s < 6; s++)
+    for (let f = lo; f <= hi; f++)
+      if (OPEN_MIDI[s] + f === m) out.push({s:s, f:f});
+  return out;
+}
+const posLabel = p => "string " + STR_NUM[p.s] + " fret " + p.f;
+
+function onNoteHeard(m){
+  if (!q || q.done) return;
+  const target = OPEN_MIDI[q.s] + q.f;
+  if (m === target){
+    q.done = true; q.wasRight = true; q.heard = m;
+    q.unisons = positionsForMidi(m).filter(p => !(p.s === q.s && p.f === q.f));
+    recordResult(q.pc, true, Date.now() - q.t0);
+    renderAll();
+    if (state.auto) advanceTimer = setTimeout(newQuestion, q.unisons.length ? 2600 : 1400);
+    return;
+  }
+  if (m % 12 === q.pc){
+    /* right note, wrong octave — forgiving: doesn't end the question */
+    q.nearMiss = m;
+    q.nearCount = (q.nearCount || 0) + 1;
+    renderAll();
+    return;
+  }
+  q.done = true; q.wasRight = false; q.heard = m;
+  recordResult(q.pc, false, Date.now() - q.t0);
+  renderAll();
+  if (state.auto) advanceTimer = setTimeout(newQuestion, 2800);
+}
+
+/* ============================================================
+   ACTIVE POSITION SET
+   ============================================================ */
+function activePositions(pcFilter){
+  const out = [];
+  const lo = Math.min(state.fretMin, state.fretMax), hi = Math.max(state.fretMin, state.fretMax);
+  for (let s = 0; s < 6; s++){
+    if (!state.strings[s]) continue;
+    for (let f = lo; f <= hi; f++){
+      const pc = pcAt(s, f);
+      if (pcFilter == null ? state.notes[pc] : pc === pcFilter) out.push({s:s, f:f, pc:pc});
+    }
+  }
+  return out;
+}
+function activeNotes(){
+  const set = new Set(activePositions(null).map(p => p.pc));
+  return [...set];
+}
+
+/* ============================================================
+   FRETBOARD RENDER
+   ============================================================ */
+const GEO = { padT:26, padB:28, labelW:30, openW:42, strGap:34, fretW:60 };
+
+function boardGeom(){
+  const lo = Math.min(state.fretMin, state.fretMax), hi = Math.max(state.fretMin, state.fretMax);
+  const first = Math.max(1, lo === 0 ? 1 : lo);           // first fret drawn
+  const last  = Math.max(first, hi);
+  const showOpen = (lo === 0);
+  const nFrets = last - first + 1;
+  const nutX = GEO.labelW + GEO.openW;
+  const w = nutX + nFrets * GEO.fretW + 16;
+  const h = GEO.padT + 5 * GEO.strGap + GEO.padB;
+  return {lo:lo, hi:hi, first:first, last:last, showOpen:showOpen, nFrets:nFrets, nutX:nutX, w:w, h:h};
+}
+const strY = s => GEO.padT + s * GEO.strGap;
+function fretX(g, f){                                    // centre of the fret space
+  if (f === 0) return GEO.labelW + GEO.openW / 2;
+  return g.nutX + (f - g.first + 0.5) * GEO.fretW;
+}
+
+function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+
+function renderBoard(){
+  const g = boardGeom();
+  const P = [];
+  P.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + g.w + ' ' + g.h + '"></svg>');
+  let o = "";
+
+  /* inlay shading bands */
+  for (let f = g.first; f <= g.last; f++){
+    if (MARKERS.indexOf(f) < 0 && DOUBLE.indexOf(f) < 0) continue;
+    const x = g.nutX + (f - g.first) * GEO.fretW;
+    o += '<rect x="' + x + '" y="' + (GEO.padT - 14) + '" width="' + GEO.fretW +
+         '" height="' + (5 * GEO.strGap + 28) + '" fill="#ffffff" fill-opacity="' +
+         (DOUBLE.indexOf(f) >= 0 ? 0.075 : 0.04) + '"/>';
+  }
+
+  /* fret wires */
+  for (let f = g.first - 1; f <= g.last; f++){
+    const x = g.nutX + (f - g.first + 1) * GEO.fretW;
+    if (f === g.first - 1) continue;
+    o += '<line x1="' + x + '" y1="' + (GEO.padT - 10) + '" x2="' + x + '" y2="' +
+         (GEO.padT + 5 * GEO.strGap + 10) + '" stroke="#4a5262" stroke-width="2"/>';
+  }
+  /* nut (or position marker if starting above fret 1) */
+  o += '<line x1="' + g.nutX + '" y1="' + (GEO.padT - 12) + '" x2="' + g.nutX + '" y2="' +
+       (GEO.padT + 5 * GEO.strGap + 12) + '" stroke="' + (g.first === 1 ? "#e8eaed" : "#4a5262") +
+       '" stroke-width="' + (g.first === 1 ? 7 : 2) + '" stroke-linecap="round"/>';
+
+  /* strings */
+  for (let s = 0; s < 6; s++){
+    const y = strY(s), on = state.strings[s];
+    o += '<line x1="' + (GEO.labelW - 4) + '" y1="' + y + '" x2="' + (g.w - 8) + '" y2="' + y +
+         '" stroke="' + (on ? "#8d97a8" : "#3a4152") + '" stroke-width="' + (1 + s * 0.5) + '"/>';
+    o += '<text x="' + (GEO.labelW - 12) + '" y="' + (y + 4) + '" text-anchor="end" font-size="13" ' +
+         'font-weight="700" fill="' + (on ? "#e8eaed" : "#59627a") + '" font-family="monospace">' +
+         STR_LABEL[s] + '</text>';
+  }
+
+  /* fret numbers */
+  for (let f = g.first; f <= g.last; f++){
+    o += '<text x="' + fretX(g, f) + '" y="' + (GEO.padT + 5 * GEO.strGap + 26) +
+         '" text-anchor="middle" font-size="11.5" fill="#9aa3b2" font-family="monospace">' + f + '</text>';
+  }
+  if (g.showOpen){
+    o += '<text x="' + fretX(g, 0) + '" y="' + (GEO.padT + 5 * GEO.strGap + 26) +
+         '" text-anchor="middle" font-size="10.5" fill="#9aa3b2" font-family="monospace">open</text>';
+  }
+
+  /* per-position dots */
+  const lo = g.lo, hi = g.hi;
+  for (let s = 0; s < 6; s++){
+    const strOn = state.strings[s];
+    for (let f = (g.showOpen ? 0 : g.first); f <= g.last; f++){
+      if (f !== 0 && f < g.first) continue;
+      const inRange = strOn && f >= lo && f <= hi;
+      const pc = pcAt(s, f);
+      const x = fretX(g, f), y = strY(s);
+      const st = dotState(s, f, pc, inRange);
+      if (st.circle){
+        o += '<circle cx="' + x + '" cy="' + y + '" r="' + st.r + '" fill="' + st.fill +
+             '" fill-opacity="' + st.op + '" stroke="' + st.stroke + '" stroke-width="' + st.sw + '"/>';
+      }
+      if (st.label){
+        o += '<text x="' + x + '" y="' + (y + 4.5) + '" text-anchor="middle" font-size="' + st.fs +
+             '" font-weight="700" fill="' + st.tc + '" font-family="monospace" ' +
+             'style="pointer-events:none">' + esc(st.label) + '</text>';
+      }
+      if (st.star){
+        o += star(x, y, 12.5, 5.6, "#e0b341");
+        o += '<circle cx="' + x + '" cy="' + y + '" r="17" fill="none" stroke="#e0b341" ' +
+             'stroke-width="2" opacity="0.5"><animate attributeName="r" values="15;21;15" ' +
+             'dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" ' +
+             'values="0.55;0.05;0.55" dur="1.4s" repeatCount="indefinite"/></circle>';
+      }
+      if (seqAt(s, f)){
+        o += '<circle cx="' + x + '" cy="' + y + '" r="17" fill="none" stroke="#e0b341" stroke-width="2.5"/>';
+      }
+      /* every drawn position is clickable so you can always hear the tone */
+      o += '<g class="hit" data-s="' + s + '" data-f="' + f + '">' +
+           '<circle class="hitc" cx="' + x + '" cy="' + y + '" r="15" fill="#ffffff" fill-opacity="0.001"/></g>';
+    }
+  }
+
+  elBoard.setAttribute("viewBox", "0 0 " + g.w + " " + g.h);
+  elBoard.style.minWidth = Math.min(g.w, 980) + "px";
+  elBoard.innerHTML = o;
+}
+
+/* keep the current target on screen when the board has to scroll (phones, 24-fret ranges) */
+function scrollToTarget(){
+  const wrap = $("boardwrap");
+  if (!wrap || wrap.scrollWidth <= wrap.clientWidth + 4) return;
+  let f = null;
+  if (state.mode === "name" && q) f = q.f;
+  else if (state.mode === "find" && q && q.positions.length) f = q.positions[0].f;
+  if (f == null) return;
+  const g = boardGeom();
+  const px = (fretX(g, f) / g.w) * elBoard.getBoundingClientRect().width;
+  wrap.scrollTo({ left: Math.max(0, px - wrap.clientWidth / 2), behavior: "smooth" });
+}
+
+function star(cx, cy, R, r, fill){
+  let p = "";
+  for (let i = 0; i < 10; i++){
+    const ang = -Math.PI / 2 + i * Math.PI / 5;
+    const rad = (i % 2 === 0) ? R : r;
+    p += (i ? " " : "") + (cx + rad * Math.cos(ang)).toFixed(2) + "," + (cy + rad * Math.sin(ang)).toFixed(2);
+  }
+  return '<polygon points="' + p + '" fill="' + fill + '" stroke="#8a6a12" stroke-width="1"/>';
+}
+
+/* decide how each position is drawn */
+function dotState(s, f, pc, inRange){
+  const base = {circle:false, label:"", star:false, clickable:false,
+                r:12, fill:"#000", op:1, stroke:"none", sw:0, tc:"#fff", fs:11.5};
+
+  /* LEARN mode — show everything in range */
+  if (state.mode === "learn"){
+    if (!inRange) return base;
+    return Object.assign(base, {circle:true, r:12.5, fill:pcColour(pc,1), op:1,
+      label:pcName(pc), tc:"#0f1115", fs:IS_ACC[pc] ? 10 : 12, clickable:true});
+  }
+
+  /* NAME mode */
+  if (state.mode === "name"){
+    /* other positions that produce the identical pitch — shown after a correct played answer */
+    if (q && q.done && q.unisons && q.unisons.some(p => p.s === s && p.f === f)){
+      return Object.assign(base, {circle:true, r:12.5, fill:"none", op:1,
+        stroke:"#e0b341", sw:2.5, label:pcName(pc), tc:"#e0b341", fs:IS_ACC[pc] ? 10 : 12});
+    }
+    if (q && q.s === s && q.f === f){
+      if (q.done) return Object.assign(base, {circle:true, r:13.5,
+        fill: q.wasRight ? "#57c98b" : "#e5736b", op:1, label:pcName(pc), tc:"#0f1115",
+        fs:IS_ACC[pc] ? 10 : 12});
+      return Object.assign(base, {star:true});
+    }
+    if (state.names && inRange) return Object.assign(base, {circle:true, r:11, fill:pcColour(pc,0),
+      op:.55, label:pcName(pc), tc:"#e8eaed", fs:IS_ACC[pc] ? 9.5 : 11});
+    if (inRange) return Object.assign(base, {circle:true, r:3.2, fill:"#3d4657", op:1});
+    return base;
+  }
+
+  /* FIND mode */
+  if (state.mode === "find"){
+    if (!q) return inRange ? Object.assign(base, {circle:true, r:3.2, fill:"#3d4657"}) : base;
+    const isTarget = q.positions.some(p => p.s === s && p.f === f);
+    const found    = q.found.some(p => p.s === s && p.f === f);
+    const missed   = q.done && isTarget && !found;
+    const wrong    = q.wrong.some(p => p.s === s && p.f === f);
+    if (found)  return Object.assign(base, {circle:true, r:13, fill:"#57c98b", op:1,
+      label:pcName(pc), tc:"#0f1115", fs:IS_ACC[pc] ? 10 : 12});
+    if (missed) return Object.assign(base, {circle:true, r:13, fill:"none", op:1,
+      stroke:"#e0b341", sw:3, label:pcName(pc), tc:"#e0b341", fs:IS_ACC[pc] ? 10 : 12});
+    if (wrong)  return Object.assign(base, {circle:true, r:12, fill:"#e5736b", op:.9,
+      label:pcName(pc), tc:"#0f1115", fs:IS_ACC[pc] ? 10 : 12, clickable:!q.done && inRange});
+    if (state.names && inRange) return Object.assign(base, {circle:true, r:11, fill:pcColour(pc,0),
+      op:.55, label:pcName(pc), tc:"#e8eaed", fs:IS_ACC[pc] ? 9.5 : 11, clickable:!q.done});
+    if (inRange) return Object.assign(base, {circle:true, r:9, fill:"#ffffff", op:.07,
+      stroke:"#3d4657", sw:1, clickable:!q.done});
+    return base;
+  }
+  return base;
+}
+
+/* ============================================================
+   QUESTIONS
+   ============================================================ */
+function weightedPick(list){
+  if (!state.adaptive) return list[Math.floor(Math.random() * list.length)];
+  const w = list.map(p => {
+    const st = stats.byPc[p.pc];
+    const err = st.a >= 3 ? 1 - (st.c / st.a) : 0.4;      // unseen notes get mid weight
+    return 1 + 3 * err;
+  });
+  let tot = 0; for (const x of w) tot += x;
+  let r = Math.random() * tot;
+  for (let i = 0; i < list.length; i++){ r -= w[i]; if (r <= 0) return list[i]; }
+  return list[list.length - 1];
+}
+
+let lastKey = "";
+function newQuestion(){
+  clearTimeout(advanceTimer);
+  if (seq){ if (seq.timer) clearTimeout(seq.timer); seq = null; }
+  answerLocked = false;
+  MIC.run = []; MIC.armed = true; MIC.midi = null;
+  const pool = activePositions(null);
+  if (!pool.length){ q = null; renderAll(); return; }
+
+  if (state.mode === "name"){
+    let pick = null;
+    for (let i = 0; i < 24; i++){
+      pick = weightedPick(pool);
+      const key = pick.s + ":" + pick.f;
+      if (key !== lastKey || pool.length === 1) break;
+    }
+    lastKey = pick.s + ":" + pick.f;
+    q = {s:pick.s, f:pick.f, pc:pick.pc, t0:Date.now(), done:false, wasRight:false};
+    if (state.hearOnShow) pluck(OPEN_MIDI[pick.s] + pick.f, true);
+  } else if (state.mode === "find"){
+    const notes = activeNotes();
+    if (!notes.length){ q = null; renderAll(); return; }
+    let pc;
+    for (let i = 0; i < 24; i++){
+      const cand = state.adaptive
+        ? weightedPick(notes.map(n => ({pc:n}))).pc
+        : notes[Math.floor(Math.random() * notes.length)];
+      pc = cand;
+      if (String(pc) !== lastKey || notes.length === 1) break;
+    }
+    lastKey = String(pc);
+    q = {pc:pc, positions:activePositions(pc), found:[], wrong:[], t0:Date.now(), done:false, wasRight:false};
+  } else {
+    q = null;
+  }
+  renderAll();
+  scrollToTarget();
+}
+
+function recordResult(pc, right, ms){
+  /* per-day history, split by drill */
+  const now = Date.now();
+  const day = dayObj(todayKey());
+  const rec = dayRec(todayKey(), state.mode === "find" ? "find" : "name");
+  if (!stats.lastTs || (now - stats.lastTs) > SESSION_GAP_MS) day.sessions++;
+  stats.lastTs = now;
+  rec.a++;
+  if (right) rec.c++;
+  if (ms != null && ms < 120000){ rec.ms += ms; rec.timed++; }
+
+  stats.attempts++; session.attempts++;
+  stats.byPc[pc].a++;
+  if (right){
+    stats.correct++; session.correct++; stats.byPc[pc].c++;
+    stats.streak++; if (stats.streak > stats.best) stats.best = stats.streak;
+  } else {
+    stats.streak = 0;
+  }
+  if (ms != null && ms < 60000){
+    stats.totalMs += ms; stats.timed++;
+    stats.byPc[pc].ms += ms; stats.byPc[pc].timed++;
+  }
+  save();
+}
+
+/* --- name mode answer --- */
+function answerNote(pc){
+  if (state.mode !== "name" || !q || q.done || answerLocked) return;
+  answerLocked = true;
+  const right = (pc === q.pc);
+  q.done = true; q.wasRight = right; q.picked = pc;
+  recordResult(q.pc, right, Date.now() - q.t0);
+  pluck(OPEN_MIDI[q.s] + q.f, true);
+  renderAll();
+  if (state.auto) advanceTimer = setTimeout(newQuestion, right ? 900 : 2200);
+}
+
+/* --- find mode click --- */
+function clickPosition(s, f){
+  stopSeq();
+  pluck(OPEN_MIDI[s] + f, true);                 /* always hear what you touched */
+  if (state.mode !== "find" || !q || q.done) return;
+  const isTarget = q.positions.some(p => p.s === s && p.f === f);
+  if (isTarget){
+    if (q.found.some(p => p.s === s && p.f === f)) return;
+    q.found.push({s:s, f:f});
+    if (q.found.length === q.positions.length){
+      q.done = true;
+      q.wasRight = (q.wrong.length === 0);
+      recordResult(q.pc, q.wasRight, Date.now() - q.t0);
+      renderAll();
+      if (state.hearAll){
+        setTimeout(() => { if (q && q.done) playSeq(q.positions, 700); }, 420);
+      } else if (state.auto){
+        advanceTimer = setTimeout(newQuestion, q.wasRight ? 1100 : 2100);
+      }
+      return;
+    }
+  } else {
+    if (!q.wrong.some(p => p.s === s && p.f === f)) q.wrong.push({s:s, f:f});
+  }
+  renderAll();
+}
+
+function reveal(){
+  if (!q || q.done) return;
+  if (state.mode === "name"){
+    q.done = true; q.wasRight = false; q.revealed = true;
+    recordResult(q.pc, false, null);
+  } else if (state.mode === "find"){
+    q.done = true; q.wasRight = false; q.revealed = true;
+    recordResult(q.pc, false, null);
+    renderAll();
+    if (state.hearAll) setTimeout(() => { if (q && q.done) playSeq(q.positions, 700); }, 380);
+    return;
+  }
+  renderAll();
+}
+
+/* ============================================================
+   RENDER: prompt, answers, stats, breakdown
+   ============================================================ */
+function renderPrompt(){
+  const pool = activePositions(null);
+  if (!pool.length){
+    elPrompt.innerHTML = '<div class="txt"><div class="big" style="font-size:19px;color:var(--red)">' +
+      'No positions match your options</div><span class="hint">Turn a string back on, widen the fret ' +
+      'range, or select at least one note.</span></div>';
+    return;
+  }
+  if (state.mode === "learn"){
+    elPrompt.innerHTML = '<div class="txt"><div class="big" style="font-size:20px">Learn mode</div>' +
+      '<span class="hint">Every note in range is shown. Tap any dot to hear it. ' +
+      'Switch to a test mode when you\'re ready.</span></div>';
+    return;
+  }
+  if (!q){ elPrompt.innerHTML = '<div class="txt"><span class="hint">Press <b>Next question</b> to start.</span></div>'; return; }
+
+  if (state.mode === "name"){
+    /* the position is only spelled out AFTER you answer — otherwise it does the reading for you */
+    const play = (state.input === "play");
+    const midiName = m => SHARP[m % 12] + (Math.floor(m / 12) - 1);
+    let posTxt = q.done
+      ? "string " + STR_NUM[q.s] + " (" + STR_LABEL[q.s] + "), fret " + q.f + (q.f === 0 ? " — open" : "")
+      : (play ? "play the starred position on your guitar" : "find the star on the board");
+    if (!q.done && play && q.nearMiss != null){
+      posTxt = "that's " + pcNameBoth(q.pc) + ", but " + midiName(q.nearMiss) +
+               " — the star wants " + midiName(OPEN_MIDI[q.s] + q.f) + ". Try again.";
+    }
+    if (q.done && play && q.wasRight && q.unisons && q.unisons.length){
+      posTxt = midiName(OPEN_MIDI[q.s] + q.f) + " — I hear pitch, not position, so that could also have been " +
+               q.unisons.map(posLabel).join(" or ") + ".";
+    }
+    if (q.done && play && !q.wasRight && q.heard != null && !q.revealed){
+      posTxt = "I heard " + midiName(q.heard) + ". The star was " + pcNameBoth(q.pc) +
+               " on string " + STR_NUM[q.s] + " fret " + q.f + ".";
+    }
+    let fb = "";
+    if (q.done){
+      fb = q.revealed
+        ? '<span class="fb info">Answer: ' + pcNameBoth(q.pc) + '</span>'
+        : (q.wasRight
+            ? '<span class="fb ok">&#10003; ' + pcNameBoth(q.pc) + '</span>'
+            : '<span class="fb no">&#10007; that was ' + pcNameBoth(q.pc) + '</span>');
+    } else if (play && q.nearMiss != null){
+      fb = '<span class="fb info">right note, wrong octave</span>';
+    }
+    const head = play && !q.done ? "Play this note" : "What note is this?";
+    elPrompt.innerHTML =
+      '<div class="txt"><div class="big">' + head + '</div>' +
+      '<span class="hint">' + posTxt + '</span></div>' + fb;
+  } else {
+    const rem = q.positions.length - q.found.length;
+    let fb = "";
+    if (q.done){
+      fb = q.revealed
+        ? '<span class="fb info">' + q.positions.length + ' shown</span>'
+        : (q.wasRight
+            ? '<span class="fb ok">&#10003; all ' + q.positions.length + ' found, clean</span>'
+            : '<span class="fb no">found &mdash; but ' + q.wrong.length + ' wrong click' +
+              (q.wrong.length === 1 ? "" : "s") + '</span>');
+    } else {
+      fb = '<span class="fb info">' + rem + ' of ' + q.positions.length + ' left</span>';
+    }
+    elPrompt.innerHTML =
+      '<div class="txt"><div class="big">Find every <span style="color:var(--accent)">' +
+      pcNameBoth(q.pc) + '</span></div><span class="hint">Click every position in your selected ' +
+      'strings and frets. ' + q.positions.length + ' to find.</span></div>' + fb;
+  }
+}
+
+const KEYHINT = ["C","","D","","E","F","","G","","A","","B"];
+/* Buttons run A-first, the way the alphabet does — not C-first like the chromatic array */
+const ORDER_BASIC = [9, 11, 0, 2, 4, 5, 7];                       /* A B C D E F G, one row */
+const ORDER_ADV   = [9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8];       /* A A♯ B C C♯ D / D♯ E F F♯ G G♯ */
+
+function renderAnswers(){
+  if (state.mode !== "name" || state.input === "play"){
+    elAnswers.innerHTML = ""; elAnswers.style.display = "none"; return;
+  }
+  elAnswers.style.display = "";
+  /* Basic level offers only the seven natural notes — that's the whole point of Basic */
+  const basic = (state.level === "basic");
+  const order = basic ? ORDER_BASIC : ORDER_ADV;
+  elAnswers.className = "answers " + (basic ? "bas" : "adv");
+  let o = "";
+  for (const pc of order){
+    const cls = ["ans"];
+    if (IS_ACC[pc]) cls.push("acc");
+    if (q && q.done){
+      if (pc === q.pc) cls.push("right");
+      else if (q.picked === pc) cls.push("wrong");
+      else cls.push("dim");
+    }
+    const k = IS_ACC[pc] ? "&#8679;" + SHARP[pc][0] : KEYHINT[pc];
+    o += '<div class="' + cls.join(" ") + '" data-pc="' + pc + '">' + pcNameBoth(pc) +
+         '<span class="k">' + k + '</span></div>';
+  }
+  elAnswers.innerHTML = o;
+}
+
+function fmtPct(c, a){ return a ? Math.round(100 * c / a) + "%" : "–"; }
+function renderStats(){
+  const avg = stats.timed ? (stats.totalMs / stats.timed / 1000).toFixed(1) + "s" : "–";
+  const cells = [
+    ["This session", session.correct + "/" + session.attempts],
+    ["Accuracy", fmtPct(stats.correct, stats.attempts)],
+    ["Streak", String(stats.streak)],
+    ["Best streak", String(stats.best)],
+    ["Avg time", avg]
+  ];
+  elStats.innerHTML = cells.map(c =>
+    '<div class="stat"><div class="v">' + c[1] + '</div><div class="l">' + c[0] + '</div></div>').join("");
+}
+
+function renderBreakdown(){
+  if (!stats.attempts){
+    elBreak.innerHTML = '<p class="sub">No answers recorded yet. Your per-note accuracy will build up here.</p>';
+    return;
+  }
+  const rows = [];
+  for (const pc of ORDER_ADV){
+    const st = stats.byPc[pc];
+    if (!st.a) continue;
+    rows.push({pc:pc, a:st.a, c:st.c, p:st.c / st.a,
+               t:st.timed ? st.ms / st.timed / 1000 : null});
+  }
+  rows.sort((x, y) => x.p - y.p);                       /* worst accuracy first */
+  /* slowest note, for highlighting — slow but accurate still means not automatic */
+  const times = rows.map(r => r.t).filter(v => v != null);
+  const slowest = times.length ? Math.max.apply(null, times) : null;
+  const fastest = times.length ? Math.min.apply(null, times) : null;
+  /* only worth flagging when it's genuinely an outlier, not just marginally last */
+  const flagSlow = (times.length > 2 && slowest >= 1.3 * fastest);
+
+  let o = '<table><tr><th>Note</th><th>Tested</th><th>Correct</th><th>Accuracy</th>' +
+          '<th>Avg time</th><th style="width:26%">&nbsp;</th></tr>';
+  for (const r of rows){
+    const pct = Math.round(r.p * 100);
+    const col = pct >= 85 ? "#57c98b" : (pct >= 65 ? "#e0b341" : "#e5736b");
+    const slow = (flagSlow && r.t != null && r.t === slowest);
+    o += '<tr><td class="mono" style="color:' + pcColour(r.pc,1) + ';font-weight:700">' + pcNameBoth(r.pc) +
+         '</td><td>' + r.a + '</td><td>' + r.c + '</td><td class="mono">' + pct + '%</td>' +
+         '<td class="mono"' + (slow ? ' style="color:var(--accent);font-weight:700"' : '') + '>' +
+         (r.t != null ? r.t.toFixed(1) + "s" : "–") + (slow ? " &#9650;" : "") + '</td>' +
+         '<td><div class="bar"><i style="width:' + pct + '%;background:' + col + '"></i></div></td></tr>';
+  }
+  o += '</table>';
+  o += '<p class="sub" style="font-size:13px;margin-top:8px;">Sorted worst accuracy first. ' +
+       'Average time counts only answered questions, not revealed ones &mdash; ' +
+       '<span style="color:var(--accent)">&#9650;</span> marks your slowest note, which is often ' +
+       'a better target than the least accurate one.</p>';
+  elBreak.innerHTML = o;
+}
+
+/* ---- level selector: basic (naturals) / advanced (all 12) / custom ---- */
+const NATURALS = IS_ACC.map(a => !a);
+function notesMatch(mask){ return state.notes.every((v, i) => v === mask[i]); }
+function detectLevel(){
+  if (notesMatch(NATURALS)) return "basic";
+  if (state.notes.every(Boolean)) return "advanced";
+  return "custom";
+}
+function applyLevel(lv){
+  state.level = lv;
+  if (lv === "basic") state.notes = NATURALS.slice();
+  else if (lv === "advanced") state.notes = Array(12).fill(true);
+  save();
+}
+function renderLevel(){
+  state.level = detectLevel();
+  [...document.querySelectorAll(".lvl")].forEach(el =>
+    el.classList.toggle("on", el.dataset.level === state.level));
+}
+
+/* ---- practice prompter ---- */
+function renderBanner(){
+  const el = $("banner");
+  const t = dayTotals(todayKey());
+  const goalQ = Math.max(10, state.goalQ), goalS = Math.max(1, state.goalS);
+  const pct = Math.min(100, Math.round(100 * t.a / goalQ));
+  const streak = practiceStreak();
+  const last = lastPracticeDay();
+  const hitQ = t.a >= goalQ, hitS = t.sessions >= goalS;
+
+  let cls, title, sub;
+  if (hitQ && hitS){
+    cls = "done";
+    title = "Today's practice is done &#10003;";
+    sub = t.a + " questions across " + t.sessions + " sessions" +
+          (streak > 1 ? " &middot; " + streak + "-day streak" : "");
+  } else if (t.a === 0){
+    cls = "due";
+    title = "Time to practise";
+    sub = last
+      ? (last.ago === 1 ? "Last session was yesterday." :
+         "Last session was " + last.ago + " days ago (" + prettyDate(last.key) + ").") +
+        (streak > 1 ? " Keep the " + streak + "-day streak going." : "")
+      : "No sessions recorded yet — start with Basic and strings 5 &amp; 6.";
+  } else {
+    cls = "due";
+    title = hitQ ? "One more short session to go" : "Practice in progress";
+    sub = t.a + " of " + goalQ + " questions" +
+          (hitQ ? "" : "") + " &middot; " + t.sessions + " of " + goalS + " sessions today" +
+          (!hitS && hitQ ? " — the second session is where the retention comes from." : "");
+  }
+  el.className = "banner show " + cls;
+  el.innerHTML =
+    '<div class="b-main"><span class="b-title">' + title + '</span>' +
+    '<span class="b-sub">' + sub + '</span></div>' +
+    '<div class="prog"><div class="track"><i style="width:' + pct + '%"></i></div>' +
+    '<span class="ptxt">' + t.a + " / " + goalQ + ' questions today</span></div>';
+}
+
+function renderHistory(){
+  const keys = Object.keys(stats.days || {}).sort().reverse().slice(0, 30);
+  const el = $("history");
+  if (!keys.length){
+    el.innerHTML = '<p class="sub">No sessions recorded yet. Each day you practise will be logged here ' +
+                   'with accuracy and average answer time, so you can see the trend.</p>';
+    return;
+  }
+  const streak = practiceStreak();
+  let o = '<p class="sub" style="margin-bottom:10px;">' +
+          (streak ? '<b style="color:var(--accent)">' + streak + '-day streak</b> &middot; ' : '') +
+          keys.length + ' day' + (keys.length === 1 ? '' : 's') + ' logged</p>';
+  o += '<table><tr><th>Date</th><th>Sessions</th><th>Drill</th><th>Questions</th>' +
+       '<th>Accuracy</th><th>Avg time</th></tr>';
+  for (const k of keys){
+    const day = stats.days[k];
+    const modes = Object.keys(day.modes || {}).sort();
+    if (!modes.length) continue;
+    modes.forEach((m, i) => {
+      const r = day.modes[m];
+      const pct = r.a ? Math.round(100 * r.c / r.a) : 0;
+      const col = pct >= 85 ? "#57c98b" : (pct >= 65 ? "#e0b341" : "#e5736b");
+      o += '<tr><td>' + (i === 0 ? prettyDate(k) : "") + '</td>' +
+           '<td>' + (i === 0 ? (day.sessions || 0) : "") + '</td>' +
+           '<td>' + (m === "find" ? "Find the note" : "Name the note") + '</td>' +
+           '<td>' + r.a + '</td>' +
+           '<td style="color:' + col + ';font-weight:600">' + pct + '%</td>' +
+           '<td>' + (r.timed ? (r.ms / r.timed / 1000).toFixed(1) + "s" : "–") + '</td></tr>';
+    });
+  }
+  el.innerHTML = o + '</table>';
+}
+
+function renderChips(){
+  $("stringChips").innerHTML = [0,1,2,3,4,5].map(s =>
+    '<div class="chip' + (state.strings[s] ? " on" : "") + '" data-str="' + s + '">' +
+    STR_NUM[s] + " · " + STR_LABEL[s] + '</div>').join("");
+  $("noteChips").innerHTML = ORDER_ADV.map(pc =>
+    '<div class="chip' + (state.notes[pc] ? " on" : "") + '" data-note="' + pc + '">' +
+    pcNameBoth(pc) + '</div>').join("");
+  $("fretMin").value = state.fretMin;
+  $("fretMax").value = state.fretMax;
+  $("optSound").checked = state.sound;
+  $("optNames").checked = state.names;
+  $("optAuto").checked = state.auto;
+  $("optAdaptive").checked = state.adaptive;
+  $("optFlats").checked = state.flats;
+  $("optHearAll").checked = state.hearAll;
+  $("optHearOnShow").checked = state.hearOnShow;
+  $("goalQ").value = state.goalQ;
+  $("goalS").value = state.goalS;
+  [...document.querySelectorAll("#tabs .tab")].forEach(t =>
+    t.classList.toggle("on", t.dataset.mode === state.mode));
+  const n = activePositions(null).length;
+  const w = $("setWarn");
+  if (!n){ w.style.display = ""; w.textContent = "Nothing to test with these options."; }
+  else { w.style.display = "none"; }
+}
+
+/* which note does "Hear every one" apply to right now? */
+function hearTargetPc(){
+  if (state.mode === "find" && q) return q.pc;
+  if (state.mode === "name" && q && q.done) return q.pc;
+  if (state.mode === "learn"){
+    const on = [];
+    for (let pc = 0; pc < 12; pc++) if (state.notes[pc]) on.push(pc);
+    return on.length === 1 ? on[0] : null;
+  }
+  return null;
+}
+
+function renderMicLive(){
+  if (!MIC.ready) return;
+  const lv = $("micLevel"), cl = $("micClarity");
+  if (lv) lv.style.width = Math.round(MIC.level * 100) + "%";
+  if (cl) cl.style.width = Math.round(Math.max(0, MIC.clarity) * 100) + "%";
+  const n = $("micNote"), c = $("micCents");
+  if (!n) return;
+  if (MIC.midi == null){
+    n.textContent = "–"; n.className = "mn"; c.textContent = "waiting for a note";
+  } else {
+    n.textContent = SHARP[MIC.midi % 12] + (Math.floor(MIC.midi / 12) - 1);
+    n.className = "mn" + (MIC.clarity >= CLARITY_MIN ? " lock" : "");
+    c.textContent = (MIC.cents > 0 ? "+" : "") + MIC.cents + " cents" +
+                    (Math.abs(MIC.cents) > 25 ? "  — check your tuning" : "");
+  }
+}
+
+function renderMic(){
+  const panel = $("micPanel");
+  const show = (state.mode === "name" && state.input === "play");
+  panel.className = "mic" + (show ? " show" : "") + (MIC.ready ? " listening" : "");
+  $("inputRow").style.display = (state.mode === "name") ? "" : "none";
+  $("inClick").classList.toggle("on", state.input === "click");
+  $("inPlay").classList.toggle("on", state.input === "play");
+  if (!show) return;
+  $("micStart").style.display = MIC.ready ? "none" : "";
+  $("micStart").textContent = MIC.starting ? "Starting…" : "Enable microphone";
+  $("micLive").style.display = MIC.ready ? "" : "none";
+  $("micMsg").textContent = MIC.err ? MIC.err
+    : (MIC.ready ? "Listening — play the starred note. Single notes only, clean tone."
+                 : "One-off browser permission. Nothing is recorded or sent anywhere.");
+  $("micMsg").style.color = MIC.err ? "var(--red)" : "";
+  renderMicLive();
+}
+
+function renderTone(){
+  $("toneSynth").classList.toggle("on", state.tone === "synth");
+  $("toneGuitar").classList.toggle("on", state.tone === "guitar");
+  const s = $("toneStatus");
+  if (GTR.status === "failed"){
+    s.textContent = "guitar samples not reachable — open this from the website, not a saved copy";
+    return;
+  }
+  if (state.tone !== "guitar") { s.textContent = ""; return; }
+  if (GTR.status === "loading") s.textContent = "loading guitar samples…";
+  else if (GTR.status === "ready") s.textContent = "recorded acoustic guitar";
+  else s.textContent = "";
+}
+
+function renderControls(){
+  const learn = (state.mode === "learn");
+  $("btnNext").style.display = learn ? "none" : "";
+  $("btnReveal").style.display = (learn || !q || q.done) ? "none" : "";
+  const b = $("btnHear");
+  if (seq){
+    b.textContent = "■ Stop";
+    b.classList.add("primary");
+    b.style.display = "";
+    return;
+  }
+  b.classList.remove("primary");
+  const pc = hearTargetPc();
+  if (pc == null){
+    if (state.mode === "learn"){
+      b.style.display = "";
+      b.innerHTML = "&#9654; Hear the whole board";
+    } else {
+      b.style.display = "none";
+    }
+    return;
+  }
+  b.style.display = "";
+  b.innerHTML = "&#9654; Hear every " + pcNameBoth(pc) + " in range";
+}
+
+function renderAll(){
+  renderLevel();                 /* must run first: the answer buttons depend on the level */
+  renderChips();
+  renderPrompt();
+  renderBoard();
+  renderAnswers();
+  renderControls();
+  renderTone();
+  renderMic();
+  renderBanner();
+  renderHistory();
+  renderStats();
+  renderBreakdown();
+}
+
+/* ============================================================
+   EVENTS
+   ============================================================ */
+$("tabs").addEventListener("click", e => {
+  const t = e.target.closest(".tab"); if (!t) return;
+  stopSeq();
+  state.mode = t.dataset.mode; save();
+  q = null;
+  if (state.mode === "learn") renderAll(); else newQuestion();
+});
+
+elAnswers.addEventListener("click", e => {
+  const a = e.target.closest(".ans"); if (!a) return;
+  answerNote(+a.dataset.pc);
+});
+
+elBoard.addEventListener("click", e => {
+  const g = e.target.closest(".hit"); if (!g) return;
+  clickPosition(+g.dataset.s, +g.dataset.f);
+});
+
+$("btnNext").addEventListener("click", () => {
+  if (state.mode === "learn"){ state.mode = "name"; }
+  newQuestion();
+});
+$("btnReveal").addEventListener("click", reveal);
+
+document.addEventListener("click", e => {
+  const l = e.target.closest(".lvl"); if (!l) return;
+  const lv = l.dataset.level;
+  if (lv === "custom"){ $("setPanel").open = true; $("setPanel").scrollIntoView({behavior:"smooth"}); return; }
+  applyLevel(lv);
+  q = null;
+  if (state.mode !== "learn") newQuestion(); else renderAll();
+});
+
+$("goalQ").addEventListener("change", e => {
+  state.goalQ = Math.max(10, Math.min(500, parseInt(e.target.value, 10) || 80));
+  e.target.value = state.goalQ; save(); renderBanner();
+});
+$("goalS").addEventListener("change", e => {
+  state.goalS = Math.max(1, Math.min(6, parseInt(e.target.value, 10) || 2));
+  e.target.value = state.goalS; save(); renderBanner();
+});
+
+$("btnHear").addEventListener("click", () => {
+  if (seq){ stopSeq(); return; }
+  const pc = hearTargetPc();
+  if (pc == null){
+    if (state.mode === "learn") playSeq(activePositions(null), 380);
+    return;
+  }
+  playSeq(activePositions(pc), 700);
+});
+
+$("stringChips").addEventListener("click", e => {
+  const c = e.target.closest("[data-str]"); if (!c) return;
+  const s = +c.dataset.str;
+  state.strings[s] = !state.strings[s];
+  if (!state.strings.some(Boolean)) state.strings[s] = true;   // never allow zero strings
+  save(); q = null; if (state.mode !== "learn") newQuestion(); else renderAll();
+});
+$("noteChips").addEventListener("click", e => {
+  const c = e.target.closest("[data-note]"); if (!c) return;
+  const pc = +c.dataset.note;
+  state.notes[pc] = !state.notes[pc];
+  save(); q = null; if (state.mode !== "learn") newQuestion(); else renderAll();
+});
+
+document.addEventListener("click", e => {
+  const p = e.target.closest("[data-preset]"); if (!p) return;
+  const v = p.dataset.preset;
+  if (v === "str-all")  state.strings = [true,true,true,true,true,true];
+  if (v === "str-low")  state.strings = [false,false,false,true,true,true];
+  if (v === "str-high") state.strings = [true,true,true,false,false,false];
+  if (v === "str-56")   state.strings = [false,false,false,false,true,true];
+  if (v === "n-all")  state.notes = Array(12).fill(true);
+  if (v === "n-nat")  state.notes = IS_ACC.map(a => !a);
+  if (v === "n-acc")  state.notes = IS_ACC.map(a => !!a);
+  if (v === "n-none") state.notes = Array(12).fill(false);
+  const fm = /^fr-(\d+)-(\d+)$/.exec(v);
+  if (fm){ state.fretMin = +fm[1]; state.fretMax = +fm[2]; }
+  save(); q = null; if (state.mode !== "learn") newQuestion(); else renderAll();
+});
+
+function clampFrets(){
+  let a = parseInt($("fretMin").value, 10); if (isNaN(a)) a = 0;
+  let b = parseInt($("fretMax").value, 10); if (isNaN(b)) b = 12;
+  a = Math.max(0, Math.min(24, a));
+  b = Math.max(0, Math.min(24, b));
+  if (a > b){ const t = a; a = b; b = t; }
+  state.fretMin = a; state.fretMax = b;
+  save(); q = null; if (state.mode !== "learn") newQuestion(); else renderAll();
+}
+$("fretMin").addEventListener("change", clampFrets);
+$("fretMax").addEventListener("change", clampFrets);
+
+$("optSound").addEventListener("change", e => { state.sound = e.target.checked; save(); });
+$("optNames").addEventListener("change", e => { state.names = e.target.checked; save(); renderAll(); });
+$("optAuto").addEventListener("change", e => { state.auto = e.target.checked; save(); });
+$("optAdaptive").addEventListener("change", e => { state.adaptive = e.target.checked; save(); });
+$("inClick").addEventListener("click", () => {
+  state.input = "click"; save(); micStop(); q = null; newQuestion();
+});
+$("inPlay").addEventListener("click", () => {
+  state.input = "play"; save();
+  q = null; newQuestion();
+  if (MIC.ready && !MIC.raf) micLoop(); else if (!MIC.ready) micStart();
+});
+$("micStart").addEventListener("click", micStart);
+
+$("toneSynth").addEventListener("click", () => { state.tone = "synth"; save(); renderTone(); });
+$("toneGuitar").addEventListener("click", () => {
+  state.tone = "guitar"; save(); gtrLoadAll(); renderTone();
+});
+$("optHearAll").addEventListener("change", e => { state.hearAll = e.target.checked; save(); });
+$("optHearOnShow").addEventListener("change", e => { state.hearOnShow = e.target.checked; save(); });
+$("optFlats").addEventListener("change", e => { state.flats = e.target.checked; save(); renderAll(); });
+
+$("btnResetStats").addEventListener("click", () => {
+  stats = blankStats(); session = {attempts:0, correct:0}; save(); renderAll();
+});
+
+/* keyboard */
+const LETTER_PC = {a:9, b:11, c:0, d:2, e:4, f:5, g:7};
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const tag = (e.target.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "textarea") return;
+  const k = e.key;
+  if (k === " " || k === "Enter"){ e.preventDefault(); newQuestion(); return; }
+  if (k === "?" || k === "/"){ e.preventDefault(); reveal(); return; }
+  if (state.mode !== "name" || state.input === "play") return;
+  const low = k.toLowerCase();
+  if (LETTER_PC.hasOwnProperty(low)){
+    e.preventDefault();
+    let pc = LETTER_PC[low];
+    if (e.shiftKey){
+      if (state.level === "basic") return;     // no sharps offered at Basic level
+      const up = (pc + 1) % 12;
+      if (IS_ACC[up]) pc = up;                 // Shift+E / Shift+B do nothing musical — ignore
+      else return;
+    }
+    answerNote(pc);
+  }
+});
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+load();
+$("persistNote").textContent = canPersist
+  ? "Stats are saved in this browser."
+  : "Stats are session-only here (browser storage unavailable).";
+if (state.tone === "guitar") gtrLoadAll();
+if (state.mode === "learn") renderAll(); else newQuestion();
+</script>
+</body>
+</html>

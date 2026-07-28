@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ear Trainer</title>
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--panel2:#1e222b;--ink:#e8eaed;--muted:#9aa3b2;
+  --accent:#e0b341;--accent2:#5aa9e6;--green:#57c98b;--red:#e5736b;--line:#2a2f3a;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%;}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 18px 80px;}
+header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:20px;}
+h1{font-size:26px;margin:0 0 6px;line-height:1.25;}
+h2{font-size:18px;margin:30px 0 10px;padding-top:6px;border-top:1px solid var(--line);color:var(--accent);}
+.sub{color:var(--muted);font-size:14px;margin:0;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:14px 0;}
+a{color:var(--accent2);}
+.back{display:inline-block;font-size:13.5px;margin-bottom:10px;text-decoration:none;}
+
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 6px;}
+.tab{flex:1 1 auto;min-width:150px;text-align:center;cursor:pointer;user-select:none;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  font-size:14.5px;font-weight:600;color:var(--muted);transition:.15s;}
+.tab:hover{border-color:#3d4657;color:var(--ink);}
+.tab.on{background:#1b2434;border-color:var(--accent2);color:var(--accent2);}
+.tab .t2{display:block;font-size:12px;font-weight:400;color:var(--muted);margin-top:2px;}
+
+.prompt{background:linear-gradient(180deg,#1b2030,#171a21);border:1px solid #2f3950;border-radius:12px;
+  padding:16px;margin:14px 0;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.prompt .txt{flex:1 1 240px;min-width:200px;}
+.prompt .big{font-size:26px;font-weight:700;line-height:1.15;}
+.prompt .hint{color:var(--muted);font-size:13.5px;display:block;margin-top:3px;}
+.fb{font-size:15px;font-weight:600;padding:4px 12px;border-radius:20px;white-space:nowrap;}
+.fb.ok{background:#123020;color:var(--green);border:1px solid #1e4a30;}
+.fb.no{background:#3a1c1a;color:var(--red);border:1px solid #5c2d29;}
+.fb.info{background:#2a2f3a;color:var(--muted);border:1px solid #3a4152;}
+
+.playbig{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+  background:#1b2434;border:1px solid var(--accent2);color:var(--accent2);border-radius:12px;
+  padding:16px;font-size:17px;font-weight:700;cursor:pointer;font-family:inherit;transition:.12s;}
+.playbig:hover{background:#22304a;}
+.playbig:active{transform:scale(.99);}
+
+.answers{display:grid;gap:8px;margin:14px 0;}
+.answers.c6{grid-template-columns:repeat(6,1fr);}
+.answers.c4{grid-template-columns:repeat(4,1fr);}
+.answers.c3{grid-template-columns:repeat(3,1fr);}
+@media(max-width:640px){.answers.c6,.answers.c4{grid-template-columns:repeat(3,1fr);}}
+.ans{cursor:pointer;user-select:none;background:var(--panel2);border:1px solid var(--line);
+  border-radius:10px;padding:11px 6px;text-align:center;font-weight:700;font-size:15px;transition:.12s;}
+.ans .k{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px;}
+.ans:hover{border-color:var(--accent2);background:#232b39;}
+.ans:active{transform:scale(.96);}
+.ans.right{background:#123020;border-color:var(--green);color:var(--green);}
+.ans.wrong{background:#3a1c1a;border-color:var(--red);color:var(--red);}
+.ans.dim{opacity:.32;}
+
+.boardwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;padding:10px 6px;margin:14px 0;}
+svg.board{display:block;min-width:640px;width:100%;height:auto;}
+svg.board .hit{cursor:pointer;}
+svg.board .hit:hover circle.hitc{fill:#5aa9e6;fill-opacity:.28;}
+
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+button.btn{cursor:pointer;background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+  border-radius:9px;padding:8px 14px;font-size:14px;font-weight:600;font-family:inherit;transition:.12s;}
+button.btn:hover{border-color:var(--accent2);}
+button.btn.primary{background:#1b2434;border-color:var(--accent2);color:var(--accent2);}
+
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:14px 0;}
+@media(max-width:700px){.stats{grid-template-columns:repeat(3,1fr);}}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;}
+.stat .v{font-size:22px;font-weight:700;color:var(--accent);line-height:1.2;}
+.stat .l{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+
+details.set{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:14px 0;}
+details.set>summary{cursor:pointer;padding:12px 16px;font-weight:600;color:var(--accent);list-style:none;}
+details.set>summary::-webkit-details-marker{display:none}
+details.set>summary::before{content:"\25B8 ";color:var(--muted);}
+details.set[open]>summary::before{content:"\25BE ";}
+.setbody{padding:0 16px 16px;border-top:1px solid var(--line);}
+.grp{margin:14px 0 0;}
+.grp>.lab{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;
+  font-weight:600;margin-bottom:7px;display:block;}
+.chips{display:flex;gap:6px;flex-wrap:wrap;}
+.chip{cursor:pointer;user-select:none;background:var(--panel2);border:1px solid var(--line);
+  border-radius:8px;padding:6px 11px;font-size:13.5px;font-weight:600;color:var(--muted);transition:.12s;}
+.chip:hover{border-color:#3d4657;}
+.chip.on{background:#1b2434;border-color:var(--accent2);color:var(--accent2);}
+.chip.mini{font-size:12px;padding:5px 9px;}
+label.sw{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:14px;margin:0 16px 6px 0;}
+label.sw input{width:16px;height:16px;accent-color:#5aa9e6;cursor:pointer;}
+.num{background:#0c0e13;color:var(--ink);border:1px solid var(--line);border-radius:8px;
+  padding:6px 8px;width:74px;font-size:14px;font-family:inherit;}
+.warn{color:var(--red);font-size:13.5px;margin-top:8px;}
+
+table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px;}
+th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;}
+th{background:var(--panel2);color:var(--accent);font-weight:600;}
+.bar{height:7px;border-radius:4px;background:#2a2f3a;overflow:hidden;min-width:60px;}
+.bar>i{display:block;height:100%;background:var(--green);}
+footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px;}
+.scrollhint{display:none;font-size:12px;color:var(--muted);text-align:right;margin:-6px 2px 4px;}
+@media(max-width:560px){
+  .wrap{padding:20px 12px 60px;}
+  h1{font-size:21px;}
+  .tab{min-width:0;flex:1 1 40%;padding:9px 6px;font-size:13px;}
+  .tab .t2{display:none;}
+  .prompt .big{font-size:21px;}
+  .scrollhint{display:block;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <a class="back" href="index.html">&larr; Practice tools</a>
+  <h1>&#127911; Ear Trainer</h1>
+  <p class="sub">Four drills &middot; synth or recorded guitar &middot; all answers always shown, no elimination</p>
+</header>
+
+<div class="tabs" id="tabs">
+  <div class="tab on" data-mode="interval">Intervals<span class="t2">two notes &rarr; name the gap</span></div>
+  <div class="tab" data-mode="fret">Hear it &rarr; find it<span class="t2">a note sounds &rarr; click it</span></div>
+  <div class="tab" data-mode="chord">Chord quality<span class="t2">major, minor, 7ths, sus</span></div>
+  <div class="tab" data-mode="degree">Scale degrees<span class="t2">key established &rarr; name the degree</span></div>
+</div>
+
+<div class="prompt" id="prompt"></div>
+
+<button class="playbig" id="btnPlay">&#9654; Play</button>
+
+<div class="boardwrap" id="boardwrap" style="display:none">
+  <svg class="board" id="board" xmlns="http://www.w3.org/2000/svg"></svg>
+</div>
+<p class="scrollhint" id="scrollhint" style="display:none">&#8592; the board scrolls sideways &#8594;</p>
+
+<div class="answers c6" id="answers"></div>
+
+<div class="row" style="margin:12px 0 8px;">
+  <button class="btn primary" id="btnNext">Next question &rarr;</button>
+  <button class="btn" id="btnReplay">&#8635; Replay</button>
+  <button class="btn" id="btnReveal">Reveal answer</button>
+</div>
+
+<div class="row" style="margin:0 0 8px;">
+  <span style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Tone</span>
+  <div class="chips">
+    <div class="chip on" id="toneSynth">Synth</div>
+    <div class="chip" id="toneGuitar">Real guitar</div>
+  </div>
+  <span class="sub" id="toneStatus" style="font-size:13px;"></span>
+</div>
+
+<div class="row" style="margin:0 0 4px;">
+  <label class="sw"><input type="checkbox" id="optAuto" checked> Auto-advance</label>
+  <label class="sw"><input type="checkbox" id="optAutoPlay" checked> Play automatically on each new question</label>
+  <label class="sw"><input type="checkbox" id="optAdaptive"> Favour what I get wrong</label>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<details class="set" id="setPanel">
+  <summary>Drill options</summary>
+  <div class="setbody">
+
+    <div class="grp" id="grpIntervals">
+      <span class="lab">Intervals to test</span>
+      <div class="chips" id="ivChips"></div>
+      <div class="chips" style="margin-top:7px;">
+        <div class="chip mini" data-preset="iv-all">All 12</div>
+        <div class="chip mini" data-preset="iv-easy">Starter 5 (m3 M3 P4 P5 P8)</div>
+        <div class="chip mini" data-preset="iv-common">Common 8</div>
+      </div>
+      <div class="grp">
+        <span class="lab">How the two notes are played</span>
+        <div class="chips" id="ivDirChips">
+          <div class="chip on" data-dir="up">Ascending</div>
+          <div class="chip" data-dir="down">Descending</div>
+          <div class="chip" data-dir="both">Together</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grp" id="grpChords">
+      <span class="lab">Chord qualities to test</span>
+      <div class="chips" id="chChips"></div>
+      <div class="chips" style="margin-top:7px;">
+        <div class="chip mini" data-preset="ch-all">All</div>
+        <div class="chip mini" data-preset="ch-triads">Triads only</div>
+        <div class="chip mini" data-preset="ch-majmin">Major vs minor</div>
+      </div>
+      <div class="grp">
+        <span class="lab">How the chord is played</span>
+        <div class="chips" id="chStyleChips">
+          <div class="chip on" data-cs="strum">Strummed</div>
+          <div class="chip" data-cs="arp">Arpeggiated</div>
+          <div class="chip" data-cs="both">Both</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grp" id="grpDegree">
+      <span class="lab">Key</span>
+      <div class="chips" id="keyChips"></div>
+      <div class="grp">
+        <span class="lab">Degrees to test</span>
+        <div class="chips" id="degChips"></div>
+        <div class="chips" style="margin-top:7px;">
+          <div class="chip mini" data-preset="dg-major">Major scale (7)</div>
+          <div class="chip mini" data-preset="dg-minorpent">Minor pentatonic (5)</div>
+          <div class="chip mini" data-preset="dg-all">All 12</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grp" id="grpFret">
+      <span class="lab">Fretboard drill &mdash; strings</span>
+      <div class="chips" id="strChips"></div>
+      <div class="chips" style="margin-top:7px;">
+        <div class="chip mini" data-preset="str-all">All 6</div>
+        <div class="chip mini" data-preset="str-low">Low 3 (E A D)</div>
+        <div class="chip mini" data-preset="str-56">Strings 5 &amp; 6</div>
+      </div>
+      <div class="grp">
+        <span class="lab">Fretboard drill &mdash; frets</span>
+        <div class="row">
+          <span style="font-size:14px;color:var(--muted)">From</span>
+          <input class="num" type="number" id="fretMin" min="0" max="24" value="0">
+          <span style="font-size:14px;color:var(--muted)">to</span>
+          <input class="num" type="number" id="fretMax" min="0" max="24" value="12">
+        </div>
+        <p class="sub" style="font-size:13px;margin-top:6px;">
+          The exact pitch is played, so only one position is right &mdash; the same note an octave away is a wrong answer.</p>
+      </div>
+    </div>
+
+    <div class="grp">
+      <span class="lab">Root / reference note</span>
+      <div class="row">
+        <span style="font-size:14px;color:var(--muted)">Lowest</span>
+        <input class="num" type="number" id="rootLo" min="40" max="76" value="45">
+        <span style="font-size:14px;color:var(--muted)">Highest</span>
+        <input class="num" type="number" id="rootHi" min="40" max="76" value="64">
+        <span class="sub" style="font-size:13px;" id="rootTxt"></span>
+      </div>
+    </div>
+
+    <div class="warn" id="setWarn" style="display:none"></div>
+  </div>
+</details>
+
+<h2>Where you're weak</h2>
+<div class="card">
+  <div class="row" style="margin-bottom:8px;">
+    <button class="btn" id="btnResetStats">Reset stats for this drill</button>
+    <span class="sub" id="persistNote"></span>
+  </div>
+  <div id="breakdown"></div>
+</div>
+
+<footer>
+  <span class="kbd">Space</span> replays &middot; <span class="kbd">Enter</span> next question &middot;
+  <span class="kbd">?</span> reveals. Number keys pick the matching answer.
+  Guitar samples are University of Iowa acoustic guitar recordings; the synth is a Karplus-Strong plucked string.
+</footer>
+
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   SHARED MUSIC MODEL (same conventions as the fretboard trainer)
+   ============================================================ */
+const OPEN_MIDI = [64, 59, 55, 50, 45, 40];        // string 1 (high e) .. 6 (low E)
+const STR_LABEL = ["e", "B", "G", "D", "A", "E"];
+const STR_NUM   = [1, 2, 3, 4, 5, 6];
+const SHARP = ["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
+const FLAT  = ["C","D♭","D","E♭","E","F","G♭","G","A♭","A","B♭","B"];
+const IS_ACC = [0,1,0,1,0,0,1,0,1,0,1,0];
+const MARKERS = [3,5,7,9,15,17,19,21];
+const DOUBLE  = [12,24];
+const midiName = m => SHARP[m % 12] + (Math.floor(m / 12) - 1);
+const pcNameBoth = pc => IS_ACC[pc] ? SHARP[pc] + "/" + FLAT[pc] : SHARP[pc];
+const pcColour = pc => "hsl(" + (pc * 30) + ",52%,48%)";
+
+const INTERVALS = [
+  {n:1,  s:"m2",  l:"Minor 2nd"},
+  {n:2,  s:"M2",  l:"Major 2nd"},
+  {n:3,  s:"m3",  l:"Minor 3rd"},
+  {n:4,  s:"M3",  l:"Major 3rd"},
+  {n:5,  s:"P4",  l:"Perfect 4th"},
+  {n:6,  s:"TT",  l:"Tritone"},
+  {n:7,  s:"P5",  l:"Perfect 5th"},
+  {n:8,  s:"m6",  l:"Minor 6th"},
+  {n:9,  s:"M6",  l:"Major 6th"},
+  {n:10, s:"m7",  l:"Minor 7th"},
+  {n:11, s:"M7",  l:"Major 7th"},
+  {n:12, s:"P8",  l:"Octave"}
+];
+const CHORDS = [
+  {k:"maj",   l:"Major",       iv:[0,4,7]},
+  {k:"min",   l:"Minor",       iv:[0,3,7]},
+  {k:"dim",   l:"Diminished",  iv:[0,3,6]},
+  {k:"aug",   l:"Augmented",   iv:[0,4,8]},
+  {k:"sus2",  l:"Sus2",        iv:[0,2,7]},
+  {k:"sus4",  l:"Sus4",        iv:[0,5,7]},
+  {k:"dom7",  l:"Dominant 7",  iv:[0,4,7,10]},
+  {k:"maj7",  l:"Major 7",     iv:[0,4,7,11]},
+  {k:"min7",  l:"Minor 7",     iv:[0,3,7,10]}
+];
+const DEGREES = [
+  {n:0,  s:"1",  l:"Root"},      {n:1,  s:"♭2", l:"Flat 2nd"},
+  {n:2,  s:"2",  l:"2nd"},       {n:3,  s:"♭3", l:"Flat 3rd"},
+  {n:4,  s:"3",  l:"3rd"},       {n:5,  s:"4",  l:"4th"},
+  {n:6,  s:"♭5", l:"Flat 5th"},  {n:7,  s:"5",  l:"5th"},
+  {n:8,  s:"♭6", l:"Flat 6th"},  {n:9,  s:"6",  l:"6th"},
+  {n:10, s:"♭7", l:"Flat 7th"},  {n:11, s:"7",  l:"Major 7th"}
+];
+
+/* ============================================================
+   AUDIO — synth pluck + optional real guitar samples
+   ============================================================ */
+let actx = null;
+function ac(){
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === "suspended") actx.resume();
+  return actx;
+}
+const SAMP_MIN = 38, SAMP_MAX = 74;
+const SAMP_LETTERS = ["C","Cs","D","Ds","E","F","Fs","G","Gs","A","As","B"];
+const sampName = m => SAMP_LETTERS[m % 12] + (Math.floor(m / 12) - 1);
+const GTR = { buf:{}, tried:{}, status:"idle", loaded:0, total:SAMP_MAX - SAMP_MIN + 1 };
+
+function gtrFetch(m){
+  if (GTR.buf[m] || GTR.tried[m]) return Promise.resolve(GTR.buf[m] || null);
+  GTR.tried[m] = true;
+  return fetch("samples/" + sampName(m) + ".mp3")
+    .then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); })
+    .then(a => new Promise((res, rej) => ac().decodeAudioData(a, res, rej)))
+    .then(b => { GTR.buf[m] = b; GTR.loaded++; return b; })
+    .catch(() => { GTR.tried[m] = false; return null; });
+}
+function gtrLoadAll(){
+  if (GTR.status === "loading" || GTR.status === "ready") return;
+  GTR.status = "loading"; renderTone();
+  const jobs = [];
+  for (let m = SAMP_MIN; m <= SAMP_MAX; m++) jobs.push(gtrFetch(m));
+  Promise.all(jobs).then(rs => {
+    const got = rs.filter(Boolean).length;
+    GTR.status = got ? "ready" : "failed";
+    if (!got) state.tone = "synth";
+    renderTone();
+  });
+}
+function gtrPlay(midi, when, gain){
+  let src = null;
+  for (let d = 0; d <= 14 && src === null; d++){
+    if (GTR.buf[midi - d]) src = midi - d;
+    else if (GTR.buf[midi + d]) src = midi + d;
+  }
+  if (src === null) return false;
+  try {
+    const c = ac(), n = c.createBufferSource(), g = c.createGain();
+    n.buffer = GTR.buf[src];
+    n.playbackRate.value = Math.pow(2, (midi - src) / 12);
+    g.gain.value = (gain == null ? 0.8 : gain);
+    n.connect(g); g.connect(c.destination);
+    n.start(c.currentTime + (when || 0));
+    return true;
+  } catch (e) { return false; }
+}
+function synth(midi, when, gain){
+  try {
+    const c = ac();
+    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    const sr = c.sampleRate, N = Math.max(2, Math.round(sr / freq));
+    const len = Math.round(sr * 1.6);
+    const buf = c.createBuffer(1, len, sr), d = buf.getChannelData(0);
+    const ring = new Float32Array(N);
+    for (let i = 0; i < N; i++) ring[i] = Math.random() * 2 - 1;
+    let idx = 0;
+    for (let i = 0; i < len; i++){
+      const v = ring[idx];
+      ring[idx] = 0.9965 * 0.5 * (v + ring[(idx + 1) % N]);
+      d[i] = v;
+      idx = (idx + 1) % N;
+    }
+    for (let i = 0; i < len; i++) d[i] *= Math.min(1, i / 120) * Math.pow(1 - i / len, 1.4) * 0.42;
+    const n = c.createBufferSource(), g = c.createGain();
+    n.buffer = buf; g.gain.value = (gain == null ? 1 : gain);
+    n.connect(g); g.connect(c.destination);
+    n.start(c.currentTime + (when || 0));
+  } catch (e) {}
+}
+function note(midi, when, gain){
+  if (state.tone === "guitar" && gtrPlay(midi, when, gain)) return;
+  synth(midi, when, gain);
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const DEF = {
+  mode: "interval",
+  tone: "synth", auto: true, autoPlay: true, adaptive: false,
+  ivOn: [false,true,true,true,true,true,true,true,true,true,true,true,true],  // index by semitones 1..12
+  ivDir: "up",
+  chOn: {maj:true, min:true, dim:true, aug:false, sus2:false, sus4:false, dom7:true, maj7:true, min7:true},
+  chStyle: "strum",
+  key: 0,
+  degOn: [true,false,true,false,true,true,false,true,false,true,false,true],
+  strings: [true,true,true,true,true,true],
+  fretMin: 0, fretMax: 12,
+  rootLo: 45, rootHi: 64
+};
+let state = JSON.parse(JSON.stringify(DEF));
+
+const blankStat = () => ({attempts:0, correct:0, streak:0, best:0, totalMs:0, timed:0, by:{}});
+let stats = {interval:blankStat(), fret:blankStat(), chord:blankStat(), degree:blankStat()};
+let session = {attempts:0, correct:0};
+
+let canPersist = false;
+try { localStorage.setItem("__et__","1"); localStorage.removeItem("__et__"); canPersist = true; } catch(e){}
+function save(){
+  if (!canPersist) return;
+  try {
+    localStorage.setItem("et_stats", JSON.stringify(stats));
+    localStorage.setItem("et_state", JSON.stringify(state));
+  } catch(e){}
+}
+function load(){
+  if (!canPersist) return;
+  try {
+    const s = JSON.parse(localStorage.getItem("et_stats") || "null");
+    if (s && s.interval && s.fret && s.chord && s.degree) stats = s;
+    const t = JSON.parse(localStorage.getItem("et_state") || "null");
+    if (t && Array.isArray(t.ivOn) && t.ivOn.length === 13 &&
+        Array.isArray(t.degOn) && t.degOn.length === 12 &&
+        Array.isArray(t.strings) && t.strings.length === 6) Object.assign(state, t);
+  } catch(e){}
+}
+
+let q = null, locked = false, advTimer = null, lastKey = "";
+const $ = id => document.getElementById(id);
+const elPrompt = $("prompt"), elAnswers = $("answers"), elBoard = $("board"),
+      elStats = $("stats"), elBreak = $("breakdown");
+const S = () => stats[state.mode];
+
+/* ============================================================
+   ACTIVE OPTION SETS
+   ============================================================ */
+function ivList(){ const o=[]; for (let i=1;i<=12;i++) if (state.ivOn[i]) o.push(i); return o; }
+function chList(){ return CHORDS.filter(c => state.chOn[c.k]); }
+function degList(){ const o=[]; for (let i=0;i<12;i++) if (state.degOn[i]) o.push(i); return o; }
+function fretPositions(){
+  const out = [];
+  const lo = Math.min(state.fretMin, state.fretMax), hi = Math.max(state.fretMin, state.fretMax);
+  for (let s = 0; s < 6; s++){
+    if (!state.strings[s]) continue;
+    for (let f = lo; f <= hi; f++) out.push({s:s, f:f, midi:OPEN_MIDI[s] + f});
+  }
+  return out;
+}
+function rootRange(){
+  const lo = Math.min(state.rootLo, state.rootHi), hi = Math.max(state.rootLo, state.rootHi);
+  return {lo:lo, hi:hi};
+}
+function pickRoot(span){
+  const r = rootRange();
+  const hi = Math.max(r.lo, r.hi - (span || 0));
+  return r.lo + Math.floor(Math.random() * (hi - r.lo + 1));
+}
+
+/* ============================================================
+   QUESTIONS
+   ============================================================ */
+function weighted(keys){
+  if (!state.adaptive) return keys[Math.floor(Math.random() * keys.length)];
+  const by = S().by;
+  const w = keys.map(k => {
+    const r = by[k];
+    const err = (r && r.a >= 3) ? 1 - r.c / r.a : 0.4;
+    return 1 + 3 * err;
+  });
+  let tot = 0; for (const x of w) tot += x;
+  let n = Math.random() * tot;
+  for (let i = 0; i < keys.length; i++){ n -= w[i]; if (n <= 0) return keys[i]; }
+  return keys[keys.length - 1];
+}
+function pickDistinct(keys){
+  for (let i = 0; i < 24; i++){
+    const k = weighted(keys);
+    if (String(k) !== lastKey || keys.length === 1){ lastKey = String(k); return k; }
+  }
+  lastKey = String(keys[0]);
+  return keys[0];
+}
+
+function newQuestion(){
+  clearTimeout(advTimer);
+  locked = false;
+
+  if (state.mode === "interval"){
+    const list = ivList();
+    if (!list.length){ q = null; renderAll(); return; }
+    const n = pickDistinct(list);
+    const root = pickRoot(n);
+    q = {key:n, root:root, notes:[root, root + n], t0:Date.now(), done:false};
+  } else if (state.mode === "chord"){
+    const list = chList();
+    if (!list.length){ q = null; renderAll(); return; }
+    const ck = pickDistinct(list.map(x => x.k));
+    const c = CHORDS.find(x => x.k === ck);
+    const root = pickRoot(Math.max.apply(null, c.iv));
+    q = {key:c.k, chord:c, root:root, notes:c.iv.map(i => root + i), t0:Date.now(), done:false};
+  } else if (state.mode === "degree"){
+    const list = degList();
+    if (!list.length){ q = null; renderAll(); return; }
+    const d = pickDistinct(list);
+    const r = rootRange();
+    let tonic = state.key + 12 * Math.round((r.lo + 2 - state.key) / 12);
+    while (tonic < 40) tonic += 12;
+    q = {key:d, tonic:tonic, notes:[tonic + d], t0:Date.now(), done:false};
+  } else {
+    const pool = fretPositions();
+    if (!pool.length){ q = null; renderAll(); return; }
+    const k = pickDistinct(pool.map(p => p.s + ":" + p.f));
+    const p = pool.find(x => x.s + ":" + x.f === k);
+    q = {key:k, pos:p, notes:[p.midi], found:false, wrong:[], t0:Date.now(), done:false};
+  }
+  renderAll();
+  if (state.autoPlay) setTimeout(playQuestion, 220);
+}
+
+/* ---- playback per drill ---- */
+let playTimer = null;
+function playQuestion(){
+  if (!q) return;
+  clearTimeout(playTimer);
+  if (state.mode === "interval"){
+    const dir = state.ivDir;
+    if (dir === "both"){ note(q.notes[0]); note(q.notes[1]); }
+    else if (dir === "down"){ note(q.notes[1]); note(q.notes[0], 0.75); }
+    else { note(q.notes[0]); note(q.notes[1], 0.75); }
+  } else if (state.mode === "chord"){
+    const st = state.chStyle === "both" ? (Math.random() < 0.5 ? "strum" : "arp") : state.chStyle;
+    if (st === "strum") q.notes.forEach((m, i) => note(m, i * 0.035));
+    else q.notes.forEach((m, i) => note(m, i * 0.42));
+  } else if (state.mode === "degree"){
+    /* establish the key first: I - IV - V - I, then the mystery note */
+    const t = q.tonic;
+    [[t,0],[t+4,0],[t+7,0]].forEach(p => note(p[0], 0.0, 0.5));
+    [[t+5,0.55],[t+9,0.55],[t+12,0.55]].forEach(p => note(p[0], p[1], 0.5));
+    [[t+7,1.1],[t+11,1.1],[t+14,1.1]].forEach(p => note(p[0], p[1], 0.5));
+    [[t,1.65],[t+4,1.65],[t+7,1.65]].forEach(p => note(p[0], p[1], 0.5));
+    note(q.notes[0], 2.6, 1.0);
+  } else {
+    note(q.notes[0]);
+  }
+}
+
+function record(key, right, ms){
+  const st = S();
+  st.attempts++; session.attempts++;
+  if (!st.by[key]) st.by[key] = {a:0, c:0};
+  st.by[key].a++;
+  if (right){
+    st.correct++; session.correct++; st.by[key].c++;
+    st.streak++; if (st.streak > st.best) st.best = st.streak;
+  } else st.streak = 0;
+  if (ms != null && ms < 120000){ st.totalMs += ms; st.timed++; }
+  save();
+}
+
+function answer(key){
+  if (!q || q.done || locked || state.mode === "fret") return;
+  locked = true;
+  const right = (String(key) === String(q.key));
+  q.done = true; q.right = right; q.picked = key;
+  record(q.key, right, Date.now() - q.t0);
+  renderAll();
+  if (state.auto) advTimer = setTimeout(newQuestion, right ? 900 : 2400);
+}
+
+function clickFret(s, f){
+  if (state.mode !== "fret"){ note(OPEN_MIDI[s] + f); return; }
+  if (!q || q.done){ note(OPEN_MIDI[s] + f); return; }
+  note(OPEN_MIDI[s] + f);
+  const right = (q.pos.s === s && q.pos.f === f);
+  if (right){
+    q.done = true; q.right = (q.wrong.length === 0); q.found = true;
+    record(q.key, q.right, Date.now() - q.t0);
+    renderAll();
+    if (state.auto) advTimer = setTimeout(newQuestion, q.right ? 1000 : 2200);
+    return;
+  }
+  if (!q.wrong.some(p => p.s === s && p.f === f)) q.wrong.push({s:s, f:f});
+  renderAll();
+}
+
+function reveal(){
+  if (!q || q.done) return;
+  q.done = true; q.right = false; q.revealed = true;
+  record(q.key, false, null);
+  renderAll();
+}
+
+/* ============================================================
+   FRETBOARD (only used by the "hear it -> find it" drill)
+   ============================================================ */
+const GEO = { padT:26, padB:28, labelW:30, openW:42, strGap:34, fretW:60 };
+function boardGeom(){
+  const lo = Math.min(state.fretMin, state.fretMax), hi = Math.max(state.fretMin, state.fretMax);
+  const first = Math.max(1, lo === 0 ? 1 : lo);
+  const last = Math.max(first, hi);
+  const nutX = GEO.labelW + GEO.openW;
+  return {lo:lo, hi:hi, first:first, last:last, showOpen:(lo === 0), nutX:nutX,
+          w:nutX + (last - first + 1) * GEO.fretW + 16, h:GEO.padT + 5 * GEO.strGap + GEO.padB};
+}
+const strY = s => GEO.padT + s * GEO.strGap;
+function fretX(g, f){ return f === 0 ? GEO.labelW + GEO.openW / 2 : g.nutX + (f - g.first + 0.5) * GEO.fretW; }
+
+function renderBoard(){
+  const show = (state.mode === "fret");
+  $("boardwrap").style.display = show ? "" : "none";
+  $("scrollhint").style.display = show ? "" : "none";
+  if (!show) return;
+  const g = boardGeom();
+  let o = "";
+  for (let f = g.first; f <= g.last; f++){
+    if (MARKERS.indexOf(f) < 0 && DOUBLE.indexOf(f) < 0) continue;
+    o += '<rect x="' + (g.nutX + (f - g.first) * GEO.fretW) + '" y="' + (GEO.padT - 14) +
+         '" width="' + GEO.fretW + '" height="' + (5 * GEO.strGap + 28) +
+         '" fill="#ffffff" fill-opacity="' + (DOUBLE.indexOf(f) >= 0 ? 0.075 : 0.04) + '"/>';
+  }
+  for (let f = g.first; f <= g.last; f++){
+    const x = g.nutX + (f - g.first + 1) * GEO.fretW;
+    o += '<line x1="' + x + '" y1="' + (GEO.padT - 10) + '" x2="' + x + '" y2="' +
+         (GEO.padT + 5 * GEO.strGap + 10) + '" stroke="#4a5262" stroke-width="2"/>';
+  }
+  o += '<line x1="' + g.nutX + '" y1="' + (GEO.padT - 12) + '" x2="' + g.nutX + '" y2="' +
+       (GEO.padT + 5 * GEO.strGap + 12) + '" stroke="' + (g.first === 1 ? "#e8eaed" : "#4a5262") +
+       '" stroke-width="' + (g.first === 1 ? 7 : 2) + '" stroke-linecap="round"/>';
+  for (let s = 0; s < 6; s++){
+    const y = strY(s), on = state.strings[s];
+    o += '<line x1="' + (GEO.labelW - 4) + '" y1="' + y + '" x2="' + (g.w - 8) + '" y2="' + y +
+         '" stroke="' + (on ? "#8d97a8" : "#3a4152") + '" stroke-width="' + (1 + s * 0.5) + '"/>' +
+         '<text x="' + (GEO.labelW - 12) + '" y="' + (y + 4) + '" text-anchor="end" font-size="13" ' +
+         'font-weight="700" fill="' + (on ? "#e8eaed" : "#59627a") + '" font-family="monospace">' +
+         STR_LABEL[s] + '</text>';
+  }
+  for (let f = g.first; f <= g.last; f++)
+    o += '<text x="' + fretX(g, f) + '" y="' + (GEO.padT + 5 * GEO.strGap + 26) +
+         '" text-anchor="middle" font-size="11.5" fill="#9aa3b2" font-family="monospace">' + f + '</text>';
+  if (g.showOpen)
+    o += '<text x="' + fretX(g, 0) + '" y="' + (GEO.padT + 5 * GEO.strGap + 26) +
+         '" text-anchor="middle" font-size="10.5" fill="#9aa3b2" font-family="monospace">open</text>';
+
+  for (let s = 0; s < 6; s++){
+    for (let f = (g.showOpen ? 0 : g.first); f <= g.last; f++){
+      if (f !== 0 && f < g.first) continue;
+      const inRange = state.strings[s] && f >= g.lo && f <= g.hi;
+      const x = fretX(g, f), y = strY(s), pc = (OPEN_MIDI[s] + f) % 12;
+      const isTarget = q && q.pos && q.pos.s === s && q.pos.f === f;
+      const isWrong  = q && q.wrong && q.wrong.some(p => p.s === s && p.f === f);
+      if (q && q.done && isTarget){
+        o += '<circle cx="' + x + '" cy="' + y + '" r="13.5" fill="' +
+             (q.right ? "#57c98b" : "#e0b341") + '"/>' +
+             '<text x="' + x + '" y="' + (y + 4.5) + '" text-anchor="middle" font-size="' +
+             (IS_ACC[pc] ? 10 : 12) + '" font-weight="700" fill="#0f1115" font-family="monospace" ' +
+             'style="pointer-events:none">' + SHARP[pc] + '</text>';
+      } else if (isWrong){
+        o += '<circle cx="' + x + '" cy="' + y + '" r="12" fill="#e5736b" fill-opacity="0.9"/>' +
+             '<text x="' + x + '" y="' + (y + 4.5) + '" text-anchor="middle" font-size="' +
+             (IS_ACC[pc] ? 10 : 12) + '" font-weight="700" fill="#0f1115" font-family="monospace" ' +
+             'style="pointer-events:none">' + SHARP[pc] + '</text>';
+      } else if (inRange){
+        o += '<circle cx="' + x + '" cy="' + y + '" r="9" fill="#ffffff" fill-opacity="0.07" ' +
+             'stroke="#3d4657" stroke-width="1"/>';
+      }
+      o += '<g class="hit" data-s="' + s + '" data-f="' + f + '">' +
+           '<circle class="hitc" cx="' + x + '" cy="' + y + '" r="15" fill="#fff" fill-opacity="0.001"/></g>';
+    }
+  }
+  elBoard.setAttribute("viewBox", "0 0 " + g.w + " " + g.h);
+  elBoard.style.minWidth = Math.min(g.w, 980) + "px";
+  elBoard.innerHTML = o;
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function answerLabel(key){
+  if (state.mode === "interval"){ const i = INTERVALS.find(x => x.n === +key); return i ? i.l : key; }
+  if (state.mode === "chord"){ const c = CHORDS.find(x => x.k === key); return c ? c.l : key; }
+  if (state.mode === "degree"){ const d = DEGREES.find(x => x.n === +key); return d ? d.s + " — " + d.l : key; }
+  const p = String(key).split(":");
+  return "string " + STR_NUM[+p[0]] + " (" + STR_LABEL[+p[0]] + "), fret " + p[1];
+}
+
+function renderPrompt(){
+  if (!q){
+    elPrompt.innerHTML = '<div class="txt"><div class="big" style="font-size:19px;color:var(--red)">' +
+      'Nothing selected to test</div><span class="hint">Open drill options and turn something on.</span></div>';
+    return;
+  }
+  const T = {
+    interval: ["What interval is this?", state.ivDir === "both" ? "both notes together" :
+               (state.ivDir === "down" ? "high note first" : "low note first")],
+    chord:    ["What chord is this?", "root position, " + (state.chStyle === "arp" ? "arpeggiated" :
+               state.chStyle === "both" ? "strummed or arpeggiated" : "strummed")],
+    degree:   ["Which scale degree?", "key of " + pcNameBoth(state.key) + " — the I–IV–V–I sets the key, then the note"],
+    fret:     ["Where is that note?", "click the exact position — octaves count as wrong"]
+  }[state.mode];
+  let fb = "";
+  if (q.done){
+    fb = q.revealed
+      ? '<span class="fb info">Answer: ' + answerLabel(q.key) + '</span>'
+      : (q.right
+          ? '<span class="fb ok">&#10003; ' + answerLabel(q.key) + '</span>'
+          : '<span class="fb no">&#10007; it was ' + answerLabel(q.key) + '</span>');
+  }
+  elPrompt.innerHTML = '<div class="txt"><div class="big">' + T[0] + '</div>' +
+    '<span class="hint">' + T[1] + '</span></div>' + fb;
+}
+
+function renderAnswers(){
+  if (state.mode === "fret"){ elAnswers.innerHTML = ""; elAnswers.style.display = "none"; return; }
+  elAnswers.style.display = "";
+  let items = [], cols = "c6";
+  if (state.mode === "interval"){
+    items = ivList().map(n => { const i = INTERVALS.find(x => x.n === n); return {k:n, a:i.s, b:i.l}; });
+    cols = items.length > 8 ? "c6" : "c4";
+  } else if (state.mode === "chord"){
+    items = chList().map(c => ({k:c.k, a:c.l, b:""}));
+    cols = items.length > 6 ? "c4" : "c3";
+  } else {
+    items = degList().map(n => { const d = DEGREES.find(x => x.n === n); return {k:n, a:d.s, b:d.l}; });
+    cols = items.length > 8 ? "c6" : "c4";
+  }
+  elAnswers.className = "answers " + cols;
+  elAnswers.innerHTML = items.map((it, i) => {
+    const cls = ["ans"];
+    if (q && q.done){
+      if (String(it.k) === String(q.key)) cls.push("right");
+      else if (String(q.picked) === String(it.k)) cls.push("wrong");
+      else cls.push("dim");
+    }
+    return '<div class="' + cls.join(" ") + '" data-key="' + it.k + '">' + it.a +
+           '<span class="k">' + (it.b || "") + (i < 9 ? " · " + (i + 1) : "") + '</span></div>';
+  }).join("");
+}
+
+function renderStats(){
+  const st = S();
+  const avg = st.timed ? (st.totalMs / st.timed / 1000).toFixed(1) + "s" : "–";
+  const cells = [
+    ["This session", session.correct + "/" + session.attempts],
+    ["Accuracy", st.attempts ? Math.round(100 * st.correct / st.attempts) + "%" : "–"],
+    ["Streak", String(st.streak)],
+    ["Best streak", String(st.best)],
+    ["Avg time", avg]
+  ];
+  elStats.innerHTML = cells.map(c =>
+    '<div class="stat"><div class="v">' + c[1] + '</div><div class="l">' + c[0] + '</div></div>').join("");
+}
+
+function renderBreakdown(){
+  const st = S(), keys = Object.keys(st.by);
+  if (!keys.length){
+    elBreak.innerHTML = '<p class="sub">Nothing recorded for this drill yet.</p>';
+    return;
+  }
+  const rows = keys.map(k => ({k:k, a:st.by[k].a, c:st.by[k].c, p:st.by[k].c / st.by[k].a}))
+                   .sort((x, y) => x.p - y.p).slice(0, 20);
+  let o = '<table><tr><th>' + (state.mode === "fret" ? "Position" : "Answer") +
+          '</th><th>Tested</th><th>Right</th><th>Accuracy</th><th style="width:32%">&nbsp;</th></tr>';
+  for (const r of rows){
+    const pct = Math.round(r.p * 100);
+    const col = pct >= 85 ? "#57c98b" : (pct >= 65 ? "#e0b341" : "#e5736b");
+    o += '<tr><td style="font-weight:600">' + answerLabel(r.k) + '</td><td>' + r.a + '</td><td>' + r.c +
+         '</td><td>' + pct + '%</td><td><div class="bar"><i style="width:' + pct + '%;background:' + col +
+         '"></i></div></td></tr>';
+  }
+  elBreak.innerHTML = o + '</table>';
+}
+
+function renderTone(){
+  $("toneSynth").classList.toggle("on", state.tone === "synth");
+  $("toneGuitar").classList.toggle("on", state.tone === "guitar");
+  const s = $("toneStatus");
+  if (GTR.status === "failed"){
+    s.textContent = "guitar samples not reachable — open this from the website, not a saved copy";
+    return;
+  }
+  if (state.tone !== "guitar"){ s.textContent = ""; return; }
+  s.textContent = GTR.status === "loading" ? "loading guitar samples…"
+                : GTR.status === "ready" ? "recorded acoustic guitar" : "";
+}
+
+function renderOptions(){
+  [...document.querySelectorAll("#tabs .tab")].forEach(t =>
+    t.classList.toggle("on", t.dataset.mode === state.mode));
+  $("grpIntervals").style.display = state.mode === "interval" ? "" : "none";
+  $("grpChords").style.display    = state.mode === "chord" ? "" : "none";
+  $("grpDegree").style.display    = state.mode === "degree" ? "" : "none";
+  $("grpFret").style.display      = state.mode === "fret" ? "" : "none";
+
+  $("ivChips").innerHTML = INTERVALS.map(i =>
+    '<div class="chip' + (state.ivOn[i.n] ? " on" : "") + '" data-iv="' + i.n + '">' + i.s + '</div>').join("");
+  $("chChips").innerHTML = CHORDS.map(c =>
+    '<div class="chip' + (state.chOn[c.k] ? " on" : "") + '" data-ch="' + c.k + '">' + c.l + '</div>').join("");
+  $("keyChips").innerHTML = SHARP.map((n, pc) =>
+    '<div class="chip' + (state.key === pc ? " on" : "") + '" data-key="' + pc + '">' + pcNameBoth(pc) + '</div>').join("");
+  $("degChips").innerHTML = DEGREES.map(d =>
+    '<div class="chip' + (state.degOn[d.n] ? " on" : "") + '" data-deg="' + d.n + '">' + d.s + '</div>').join("");
+  $("strChips").innerHTML = [0,1,2,3,4,5].map(s =>
+    '<div class="chip' + (state.strings[s] ? " on" : "") + '" data-str="' + s + '">' +
+    STR_NUM[s] + " · " + STR_LABEL[s] + '</div>').join("");
+  [...document.querySelectorAll("#ivDirChips .chip")].forEach(c =>
+    c.classList.toggle("on", c.dataset.dir === state.ivDir));
+  [...document.querySelectorAll("#chStyleChips .chip")].forEach(c =>
+    c.classList.toggle("on", c.dataset.cs === state.chStyle));
+  $("fretMin").value = state.fretMin; $("fretMax").value = state.fretMax;
+  $("rootLo").value = state.rootLo;   $("rootHi").value = state.rootHi;
+  $("optAuto").checked = state.auto;
+  $("optAutoPlay").checked = state.autoPlay;
+  $("optAdaptive").checked = state.adaptive;
+  const r = rootRange();
+  $("rootTxt").textContent = "MIDI " + r.lo + "–" + r.hi + "  (" + midiName(r.lo) + " to " + midiName(r.hi) + ")";
+  const w = $("setWarn");
+  const empty = (state.mode === "interval" && !ivList().length) ||
+                (state.mode === "chord" && !chList().length) ||
+                (state.mode === "degree" && !degList().length) ||
+                (state.mode === "fret" && !fretPositions().length);
+  w.style.display = empty ? "" : "none";
+  if (empty) w.textContent = "Nothing selected — this drill has no questions to ask.";
+  $("btnReveal").style.display = (q && !q.done) ? "" : "none";
+}
+
+function renderAll(){
+  renderOptions(); renderPrompt(); renderBoard(); renderAnswers();
+  renderTone(); renderStats(); renderBreakdown();
+}
+
+/* ============================================================
+   EVENTS
+   ============================================================ */
+$("tabs").addEventListener("click", e => {
+  const t = e.target.closest(".tab"); if (!t) return;
+  state.mode = t.dataset.mode; lastKey = ""; save(); newQuestion();
+});
+elAnswers.addEventListener("click", e => {
+  const a = e.target.closest(".ans"); if (!a) return;
+  answer(a.dataset.key);
+});
+elBoard.addEventListener("click", e => {
+  const g = e.target.closest(".hit"); if (!g) return;
+  clickFret(+g.dataset.s, +g.dataset.f);
+});
+$("btnPlay").addEventListener("click", playQuestion);
+$("btnReplay").addEventListener("click", playQuestion);
+$("btnNext").addEventListener("click", newQuestion);
+$("btnReveal").addEventListener("click", reveal);
+$("btnResetStats").addEventListener("click", () => {
+  stats[state.mode] = blankStat(); session = {attempts:0, correct:0}; save(); renderAll();
+});
+$("toneSynth").addEventListener("click", () => { state.tone = "synth"; save(); renderTone(); });
+$("toneGuitar").addEventListener("click", () => { state.tone = "guitar"; save(); gtrLoadAll(); renderTone(); });
+
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-iv],[data-ch],[data-deg],[data-str],[data-key],[data-dir],[data-cs],[data-preset]");
+  if (!el || el.classList.contains("ans") || el.classList.contains("tab")) return;
+  const d = el.dataset;
+  if (d.iv  !== undefined) state.ivOn[+d.iv] = !state.ivOn[+d.iv];
+  if (d.ch  !== undefined) state.chOn[d.ch] = !state.chOn[d.ch];
+  if (d.deg !== undefined) state.degOn[+d.deg] = !state.degOn[+d.deg];
+  if (d.str !== undefined){
+    state.strings[+d.str] = !state.strings[+d.str];
+    if (!state.strings.some(Boolean)) state.strings[+d.str] = true;
+  }
+  if (d.key !== undefined) state.key = +d.key;
+  if (d.dir !== undefined) state.ivDir = d.dir;
+  if (d.cs  !== undefined) state.chStyle = d.cs;
+  if (d.preset){
+    const p = d.preset;
+    if (p === "iv-all")    for (let i = 1; i <= 12; i++) state.ivOn[i] = true;
+    if (p === "iv-easy")   for (let i = 1; i <= 12; i++) state.ivOn[i] = [3,4,5,7,12].indexOf(i) >= 0;
+    if (p === "iv-common") for (let i = 1; i <= 12; i++) state.ivOn[i] = [2,3,4,5,7,9,10,12].indexOf(i) >= 0;
+    if (p === "ch-all")    CHORDS.forEach(c => state.chOn[c.k] = true);
+    if (p === "ch-triads") CHORDS.forEach(c => state.chOn[c.k] = c.iv.length === 3);
+    if (p === "ch-majmin") CHORDS.forEach(c => state.chOn[c.k] = (c.k === "maj" || c.k === "min"));
+    if (p === "dg-major")      state.degOn = [true,false,true,false,true,true,false,true,false,true,false,true];
+    if (p === "dg-minorpent")  state.degOn = [true,false,false,true,false,true,false,true,false,false,true,false];
+    if (p === "dg-all")        state.degOn = Array(12).fill(true);
+    if (p === "str-all") state.strings = [true,true,true,true,true,true];
+    if (p === "str-low") state.strings = [false,false,false,true,true,true];
+    if (p === "str-56")  state.strings = [false,false,false,false,true,true];
+  }
+  save(); lastKey = ""; newQuestion();
+});
+
+function clampNums(){
+  const g = (id, lo, hi, dflt) => {
+    let v = parseInt($(id).value, 10); if (isNaN(v)) v = dflt;
+    return Math.max(lo, Math.min(hi, v));
+  };
+  let a = g("fretMin", 0, 24, 0), b = g("fretMax", 0, 24, 12);
+  if (a > b){ const t = a; a = b; b = t; }
+  state.fretMin = a; state.fretMax = b;
+  let c = g("rootLo", 40, 76, 45), d = g("rootHi", 40, 76, 64);
+  if (c > d){ const t = c; c = d; d = t; }
+  state.rootLo = c; state.rootHi = d;
+  save(); newQuestion();
+}
+["fretMin","fretMax","rootLo","rootHi"].forEach(id => $(id).addEventListener("change", clampNums));
+$("optAuto").addEventListener("change", e => { state.auto = e.target.checked; save(); });
+$("optAutoPlay").addEventListener("change", e => { state.autoPlay = e.target.checked; save(); });
+$("optAdaptive").addEventListener("change", e => { state.adaptive = e.target.checked; save(); });
+
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const tag = (e.target.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "textarea") return;
+  if (e.key === " "){ e.preventDefault(); playQuestion(); return; }
+  if (e.key === "Enter"){ e.preventDefault(); newQuestion(); return; }
+  if (e.key === "?" || e.key === "/"){ e.preventDefault(); reveal(); return; }
+  if (/^[1-9]$/.test(e.key)){
+    const btns = elAnswers.querySelectorAll(".ans");
+    const i = +e.key - 1;
+    if (btns[i]){ e.preventDefault(); answer(btns[i].dataset.key); }
+  }
+});
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+load();
+$("persistNote").textContent = canPersist ? "Stats are saved in this browser."
+                                          : "Stats are session-only here.";
+if (state.tone === "guitar") gtrLoadAll();
+newQuestion();
+</script>
+</body>
+</html>

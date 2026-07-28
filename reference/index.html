@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reference</title>
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--panel2:#1e222b;--ink:#e8eaed;--muted:#9aa3b2;
+  --accent:#e0b341;--accent2:#5aa9e6;--green:#57c98b;--line:#2a2f3a;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:920px;margin:0 auto;padding:28px 20px 90px;}
+header{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:24px;}
+h1{font-size:27px;margin:0 0 6px;line-height:1.25;}
+h2{font-size:20px;margin:38px 0 10px;padding-top:8px;border-top:1px solid var(--line);color:var(--accent);}
+.sub{color:var(--muted);font-size:14px;margin:0;}
+.back{display:inline-block;font-size:13.5px;margin-bottom:12px;color:var(--accent2);text-decoration:none;}
+p{margin:9px 0;} a{color:var(--accent2);}
+.note{color:var(--muted);font-size:13.5px;}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px;}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;}
+th{background:var(--panel2);color:var(--accent);font-weight:600;white-space:nowrap;}
+table.map{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13px;min-width:640px;}
+table.map td{text-align:center;padding:5px 4px;}
+td.nat{color:var(--ink);font-weight:600;}
+td.acc{color:var(--muted);}
+.mono{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:14px 0;}
+footer{margin-top:44px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <a class="back" href="../index.html">&larr; Jeremy's Guitar</a>
+  <h1>&#128209; Reference</h1>
+  <p class="sub">Standard tuning &middot; high <b>e</b> at the top &middot; every table below is generated from
+    first principles, not typed out, so it can't drift</p>
+</header>
+
+<h2>1. The fretboard, frets 0&ndash;12</h2>
+<p class="note">Naturals in white, accidentals in grey. Everything repeats from fret 12.</p>
+<div class="scroll"><table class="map"><tr><th>String</th><th>open</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th></tr><tr><th>1 &middot; e</th><td class="nat">E</td><td class="nat">F</td><td class="acc">F♯/G♭</td><td class="nat">G</td><td class="acc">G♯/A♭</td><td class="nat">A</td><td class="acc">A♯/B♭</td><td class="nat">B</td><td class="nat">C</td><td class="acc">C♯/D♭</td><td class="nat">D</td><td class="acc">D♯/E♭</td><td class="nat">E</td></tr><tr><th>2 &middot; B</th><td class="nat">B</td><td class="nat">C</td><td class="acc">C♯/D♭</td><td class="nat">D</td><td class="acc">D♯/E♭</td><td class="nat">E</td><td class="nat">F</td><td class="acc">F♯/G♭</td><td class="nat">G</td><td class="acc">G♯/A♭</td><td class="nat">A</td><td class="acc">A♯/B♭</td><td class="nat">B</td></tr><tr><th>3 &middot; G</th><td class="nat">G</td><td class="acc">G♯/A♭</td><td class="nat">A</td><td class="acc">A♯/B♭</td><td class="nat">B</td><td class="nat">C</td><td class="acc">C♯/D♭</td><td class="nat">D</td><td class="acc">D♯/E♭</td><td class="nat">E</td><td class="nat">F</td><td class="acc">F♯/G♭</td><td class="nat">G</td></tr><tr><th>4 &middot; D</th><td class="nat">D</td><td class="acc">D♯/E♭</td><td class="nat">E</td><td class="nat">F</td><td class="acc">F♯/G♭</td><td class="nat">G</td><td class="acc">G♯/A♭</td><td class="nat">A</td><td class="acc">A♯/B♭</td><td class="nat">B</td><td class="nat">C</td><td class="acc">C♯/D♭</td><td class="nat">D</td></tr><tr><th>5 &middot; A</th><td class="nat">A</td><td class="acc">A♯/B♭</td><td class="nat">B</td><td class="nat">C</td><td class="acc">C♯/D♭</td><td class="nat">D</td><td class="acc">D♯/E♭</td><td class="nat">E</td><td class="nat">F</td><td class="acc">F♯/G♭</td><td class="nat">G</td><td class="acc">G♯/A♭</td><td class="nat">A</td></tr><tr><th>6 &middot; E</th><td class="nat">E</td><td class="nat">F</td><td class="acc">F♯/G♭</td><td class="nat">G</td><td class="acc">G♯/A♭</td><td class="nat">A</td><td class="acc">A♯/B♭</td><td class="nat">B</td><td class="nat">C</td><td class="acc">C♯/D♭</td><td class="nat">D</td><td class="acc">D♯/E♭</td><td class="nat">E</td></tr></table></div>
+
+<h2>2. Octave shapes</h2>
+<p>The same note an octave higher, by moving towards the thinner strings. These are the shapes that let you
+derive the whole board from the two bass strings rather than memorising 72 positions.</p>
+<table><tr><th>Move</th><th>Then</th><th>String pairs it works on</th></tr><tr><td class="mono">2 thinner</td><td class="mono">+2 frets</td><td class="mono">5&rarr;3, 6&rarr;4</td></tr><tr><td class="mono">2 thinner</td><td class="mono">+3 frets</td><td class="mono">3&rarr;1, 4&rarr;2</td></tr><tr><td class="mono">3 thinner</td><td class="mono">-3 frets</td><td class="mono">6&rarr;3</td></tr><tr><td class="mono">3 thinner</td><td class="mono">-2 frets</td><td class="mono">4&rarr;1, 5&rarr;2</td></tr></table>
+<div class="card">
+  <p style="margin:0"><b>The two that matter most:</b> up 2 strings and up 2 frets (works from string 6 and 5),
+  and up 3 strings and down 3 frets (works from string 6 and 5). The B string breaks both &mdash; anything
+  crossing G&rarr;B shifts by one extra fret, which is why the table above splits the way it does.</p>
+</div>
+
+<h2>3. Unisons &mdash; the same pitch in more than one place</h2>
+<p>Within frets 0&ndash;12 there are 78 positions, and <b>68</b> of them
+(87%) share their exact pitch with at least one other position. This is why a
+microphone can tell you <em>which note</em> you played but not <em>where</em> you played it.</p>
+<div class="scroll"><table><tr><th>Pitch</th><th>Places</th><th>Where</th></tr><tr><td class="mono">A2</td><td>2</td><td class="mono">s5f0, s6f5</td></tr><tr><td class="mono">A♯2</td><td>2</td><td class="mono">s5f1, s6f6</td></tr><tr><td class="mono">B2</td><td>2</td><td class="mono">s5f2, s6f7</td></tr><tr><td class="mono">C3</td><td>2</td><td class="mono">s5f3, s6f8</td></tr><tr><td class="mono">C♯3</td><td>2</td><td class="mono">s5f4, s6f9</td></tr><tr><td class="mono">D3</td><td>3</td><td class="mono">s4f0, s5f5, s6f10</td></tr><tr><td class="mono">D♯3</td><td>3</td><td class="mono">s4f1, s5f6, s6f11</td></tr><tr><td class="mono">E3</td><td>3</td><td class="mono">s4f2, s5f7, s6f12</td></tr><tr><td class="mono">F3</td><td>2</td><td class="mono">s4f3, s5f8</td></tr><tr><td class="mono">F♯3</td><td>2</td><td class="mono">s4f4, s5f9</td></tr><tr><td class="mono">G3</td><td>3</td><td class="mono">s3f0, s4f5, s5f10</td></tr><tr><td class="mono">G♯3</td><td>3</td><td class="mono">s3f1, s4f6, s5f11</td></tr><tr><td class="mono">A3</td><td>3</td><td class="mono">s3f2, s4f7, s5f12</td></tr><tr><td class="mono">A♯3</td><td>2</td><td class="mono">s3f3, s4f8</td></tr><tr><td class="mono">B3</td><td>3</td><td class="mono">s2f0, s3f4, s4f9</td></tr><tr><td class="mono">C4</td><td>3</td><td class="mono">s2f1, s3f5, s4f10</td></tr><tr><td class="mono">C♯4</td><td>3</td><td class="mono">s2f2, s3f6, s4f11</td></tr><tr><td class="mono">D4</td><td>3</td><td class="mono">s2f3, s3f7, s4f12</td></tr><tr><td class="mono">D♯4</td><td>2</td><td class="mono">s2f4, s3f8</td></tr><tr><td class="mono">E4</td><td>3</td><td class="mono">s1f0, s2f5, s3f9</td></tr><tr><td class="mono">F4</td><td>3</td><td class="mono">s1f1, s2f6, s3f10</td></tr><tr><td class="mono">F♯4</td><td>3</td><td class="mono">s1f2, s2f7, s3f11</td></tr><tr><td class="mono">G4</td><td>3</td><td class="mono">s1f3, s2f8, s3f12</td></tr><tr><td class="mono">G♯4</td><td>2</td><td class="mono">s1f4, s2f9</td></tr><tr><td class="mono">A4</td><td>2</td><td class="mono">s1f5, s2f10</td></tr><tr><td class="mono">A♯4</td><td>2</td><td class="mono">s1f6, s2f11</td></tr><tr><td class="mono">B4</td><td>2</td><td class="mono">s1f7, s2f12</td></tr></table></div>
+
+<h2>4. Capo maths</h2>
+<p>What each open shape actually sounds like with the capo at a given fret.</p>
+<div class="scroll"><table class="map"><tr><th>Shape</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th></tr><tr><th>E shape</th><td class="mono">F</td><td class="mono">F♯/G♭</td><td class="mono">G</td><td class="mono">G♯/A♭</td><td class="mono">A</td><td class="mono">A♯/B♭</td><td class="mono">B</td></tr><tr><th>A shape</th><td class="mono">A♯/B♭</td><td class="mono">B</td><td class="mono">C</td><td class="mono">C♯/D♭</td><td class="mono">D</td><td class="mono">D♯/E♭</td><td class="mono">E</td></tr><tr><th>D shape</th><td class="mono">D♯/E♭</td><td class="mono">E</td><td class="mono">F</td><td class="mono">F♯/G♭</td><td class="mono">G</td><td class="mono">G♯/A♭</td><td class="mono">A</td></tr><tr><th>G shape</th><td class="mono">G♯/A♭</td><td class="mono">A</td><td class="mono">A♯/B♭</td><td class="mono">B</td><td class="mono">C</td><td class="mono">C♯/D♭</td><td class="mono">D</td></tr><tr><th>C shape</th><td class="mono">C♯/D♭</td><td class="mono">D</td><td class="mono">D♯/E♭</td><td class="mono">E</td><td class="mono">F</td><td class="mono">F♯/G♭</td><td class="mono">G</td></tr><tr><th>Am shape</th><td class="mono">A♯/B♭m</td><td class="mono">Bm</td><td class="mono">Cm</td><td class="mono">C♯/D♭m</td><td class="mono">Dm</td><td class="mono">D♯/E♭m</td><td class="mono">Em</td></tr><tr><th>Em shape</th><td class="mono">Fm</td><td class="mono">F♯/G♭m</td><td class="mono">Gm</td><td class="mono">G♯/A♭m</td><td class="mono">Am</td><td class="mono">A♯/B♭m</td><td class="mono">Bm</td></tr><tr><th>Dm shape</th><td class="mono">D♯/E♭m</td><td class="mono">Em</td><td class="mono">Fm</td><td class="mono">F♯/G♭m</td><td class="mono">Gm</td><td class="mono">G♯/A♭m</td><td class="mono">Am</td></tr></table></div>
+
+<footer>
+  Generated from the tuning itself &mdash; if the tables ever look wrong, the generator is wrong, not the guitar.
+</footer>
+
+</div>
+</body>
+</html>
