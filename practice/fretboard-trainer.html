@@ -308,8 +308,8 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid 
   <div class="row" id="sensRow" style="margin-top:10px;display:none">
     <span style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Sensitivity</span>
     <div class="chips">
-      <div class="chip" data-sens="normal">Acoustic / amplified</div>
-      <div class="chip" data-sens="high">Quiet</div>
+      <div class="chip" data-sens="normal">Amplified</div>
+      <div class="chip on" data-sens="high">Normal</div>
       <div class="chip" data-sens="max">Very quiet</div>
     </div>
     <button class="btn" id="micRec">&#9210; Record 10 s to send me</button>
@@ -460,7 +460,7 @@ const DEF = {
   notes: [true,false,true,false,true,true,false,true,false,true,false,true],
   sound: true, names: false, auto: true, adaptive: false, flats: false,
   hearAll: true, hearOnShow: false, tone: "synth",
-  level: "basic", goalQ: 80, goalS: 2, sens: "normal"
+  level: "basic", goalQ: 80, goalS: 2, sens: "high"
 };
 let state = JSON.parse(JSON.stringify(DEF));
 
@@ -719,7 +719,7 @@ const MIC = {
   raf:0, hist:[], lastCommit:0, agree:0, span:0, muteUntil:0, paused:false,
   midi:null, cents:0, clarity:0, level:0, err:"", gate:0.001,
   rec:null, recNode:null, recBuf:[], recUntil:0, strainSince:0,
-  env:0, envMin:1e9, needOnset:false
+  env:0, envMin:1e9, needOnset:false, underGate:0
 };
 
 /* An unplugged electric across a desk sits near -30 dB. The detector is amplitude-
@@ -730,11 +730,17 @@ const MIC = {
    rejects noise is clarity >= 0.90 held for 6 frames over 100 ms: that produced zero
    false triggers even against noise LOUDER than the note. So the gate stays a constant
    and is deliberately set low. */
-const SENS = { normal:0.0040, high:0.0010, max:0.0003 };
+/* Measured from a real phone capture held near the strings: an unplugged electric
+   peaks at 4e-4 to 2e-3 rms. The old scale (0.004 / 0.001 / 0.0003) passed ZERO frames
+   on every note at the default setting — the pitch was identified perfectly in all 15
+   plucks at clarity 0.92-0.99, and the level gate threw all of it away. Scale shifted
+   down accordingly. Verified against 8 s of that room's own noise: no false triggers at
+   any of these values, because clarity + majority + onset is what rejects noise. */
+const SENS = { normal:0.0015, high:0.0003, max:0.00005 };
 const SENS_LABEL = {
-  normal: ["Acoustic / amplified", "loudest source, fewest misfires"],
-  high:   ["Quiet",                "soft playing, or further from the mic"],
-  max:    ["Very quiet",           "last resort — misfires more"]
+  normal: ["Amplified",  "loudest source, fewest misfires"],
+  high:   ["Normal",     "an acoustic, or a phone near the strings"],
+  max:    ["Very quiet", "a long way from the mic"]
 };
 const DEC = 4;                    /* decimation factor */
 const MIC_FFT = 4096;             /* native-rate window -> 1024 samples at ~11 kHz */
@@ -748,8 +754,10 @@ const STABLE_FRAMES = 6;
 const STABLE_MS = 100;
 const HIST_MS = 450;
 const AGREE = 0.70;
-const RECOMMIT_MS = 900;    /* debounce between commits — replaces "wait for silence",
-                               which never happened in a room with any background noise */
+/* Short debounce only. This was 900 ms before onset gating existed, and it silently
+   capped throughput: playing a note every ~480 ms, at most 8 of 15 could ever register.
+   Onset detection is what actually prevents double-triggering, so this can be brief. */
+const RECOMMIT_MS = 350;
 /* One commit per PLUCK. After answering, the previous note is still ringing when the
    next question appears, and the detector would happily read it again. Rather than
    filtering out "the same note as last time" — which fails the moment the ringing note
@@ -961,6 +969,8 @@ function micLoop(){
   /* ignore our own speaker output */
   if (Date.now() < MIC.muteUntil){ MIC.hist = []; renderMicLive(); return; }
 
+  if (r.freq && r.clarity >= CLARITY_MIN && r.rms < MIC.gate) MIC.underGate++;
+  else if (r.clarity >= CLARITY_MIN) MIC.underGate = 0;
   if (!r.freq || r.clarity < CLARITY_MIN || r.rms < MIC.gate){
     MIC.midi = null;
     /* don't wipe history on a single bad frame — it ages out on its own */
@@ -1277,7 +1287,7 @@ function newQuestion(){
   if (seq){ if (seq.timer) clearTimeout(seq.timer); seq = null; }
   answerLocked = false;
   MIC.hist = []; MIC.lastCommit = Date.now(); MIC.midi = null; MIC.agree = 0;
-  MIC.needOnset = true; MIC.envMin = MIC.env;
+  MIC.needOnset = true; MIC.envMin = MIC.env; MIC.underGate = 0;
   const pool = activePositions(null);
   if (!pool.length){ q = null; renderAll(); return; }
 
@@ -1753,6 +1763,13 @@ function renderMicLive(){
       if (!MIC.strainSince) MIC.strainSince = t;
     } else if (MIC.clarity >= CLARITY_MIN || MIC.level <= 0.05) {
       MIC.strainSince = 0;
+    }
+    const NEXT = {normal:"high", high:"max"};
+    if (MIC.underGate > 40 && NEXT[state.sens]){
+      d.textContent = "I can hear a clear note, but it is quieter than your sensitivity setting " +
+        "is letting through. Switch to \u201c" + SENS_LABEL[NEXT[state.sens]][0] + "\u201d.";
+      d.style.color = "var(--accent)";
+      return;
     }
     if (MIC.strainSince && t - MIC.strainSince > 6000){
       d.textContent = "Hearing plenty of sound but no steady pitch — that usually means the " +
