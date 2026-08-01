@@ -2,8 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Fretboard Note Trainer</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fretboard">
+<meta name="mobile-web-app-capable" content="yes">
 <style>
 :root{--bg:#0f1115;--panel:#171a21;--panel2:#1e222b;--ink:#e8eaed;--muted:#9aa3b2;
   --accent:#e0b341;--accent2:#5aa9e6;--green:#57c98b;--red:#e5736b;--line:#2a2f3a;}
@@ -92,6 +100,55 @@ svg.board .hit:hover circle.hitc{fill:#5aa9e6;fill-opacity:.28;}
 .ans.right{background:#123020;border-color:var(--green);color:var(--green);}
 .ans.wrong{background:#3a1c1a;border-color:var(--red);color:var(--red);}
 .ans.dim{opacity:.32;}
+
+/* ---- phone, in Play mode: propped against the guitar, read at arm's length ----
+   Matches portrait (narrow) AND landscape (short but ~844px wide, so width alone misses it). */
+@media (max-width:820px), (max-height:520px) and (orientation:landscape){
+  body.playmode .wrap{padding-top:12px;}
+  body.playmode header,
+  body.playmode .levelbar,
+  body.playmode .banner,
+  body.playmode #stats,
+  body.playmode #history,
+  body.playmode #breakdown,
+  body.playmode h2,
+  body.playmode .card,
+  body.playmode footer,
+  body.playmode .boardwrap,
+  body.playmode .scrollhint{display:none;}
+  body.playmode .prompt{min-height:0;padding:20px 16px;}
+  body.playmode .prompt .big{font-size:40px;line-height:1.05;}
+  body.playmode .prompt .hint{font-size:15px;margin-top:8px;}
+  body.playmode .mic-note .mn{font-size:52px;}
+  body.playmode .pausebtn{padding:20px;font-size:19px;}
+  body.playmode .tab .t2{display:none;}
+  /* one tap to bring the board back when you want to see where the note was */
+  body.playmode.showboard .boardwrap{display:block;}
+}
+#bigToggle{display:none;}
+@media (max-width:820px), (max-height:520px) and (orientation:landscape){
+  body.playmode #bigToggle{display:block;width:100%;margin:10px 0 0;}
+}
+
+/* Phone on its side — 390px of height to work with. Everything that matters has to
+   fit without scrolling, because you're holding a guitar, not the phone. */
+@media(max-height:520px) and (orientation:landscape){
+  body.playmode .wrap{padding:8px 12px 10px;}
+  body.playmode .tabs{gap:5px;margin:0 0 6px;}
+  body.playmode .tab{padding:6px 4px;font-size:12px;}
+  body.playmode .prompt{padding:10px 14px;margin:6px 0;}
+  body.playmode .prompt .big{font-size:27px;}
+  body.playmode .prompt .hint{font-size:13px;margin-top:3px;}
+  body.playmode .mic{padding:8px 12px;margin:6px 0;}
+  body.playmode .mic-live{gap:14px;margin-top:0;}
+  body.playmode .mic-note{min-width:110px;}
+  body.playmode .mic-note .mn{font-size:34px;}
+  body.playmode .pausebtn{margin-top:8px;padding:12px;font-size:16px;}
+  body.playmode #sensRow,
+  body.playmode #bigToggle,
+  body.playmode #micDiag,
+  body.playmode .row{display:none;}
+}
 
 /* ---- microphone panel ---- */
 .mic{display:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;
@@ -247,6 +304,7 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid 
   </div>
   <button class="pausebtn" id="micPause" style="display:none">&#9208;&#65038; Pause listening</button>
   <p class="sub" id="micDiag" style="font-size:12.5px;font-family:'SF Mono',ui-monospace,monospace;margin:8px 0 0;"></p>
+  <button class="btn" id="bigToggle">Show the fretboard</button>
   <div class="row" id="sensRow" style="margin-top:10px;display:none">
     <span style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Sensitivity</span>
     <div class="chips">
@@ -786,6 +844,7 @@ function micStart(){
     MIC.an = an;
     MIC.raw = new Float32Array(MIC_FFT);
     MIC.ready = true; MIC.starting = false;
+    keepAwake(true);
     renderMic();
     micLoop();
   }).catch(e => {
@@ -844,9 +903,34 @@ function micRecordStop(){
   renderMic();
 }
 
+/* Phones sleep mid-practice and Safari suspends audio when you switch away.
+   Neither matters on a laptop; both ruin a session with the phone propped up. */
+let wakeLock = null;
+async function keepAwake(on){
+  try {
+    if (on){
+      if (!wakeLock && "wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen");
+    } else if (wakeLock){
+      await wakeLock.release(); wakeLock = null;
+    }
+  } catch (e) { wakeLock = null; }        /* unsupported or refused — not worth surfacing */
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible"){
+    if (actx && actx.state === "suspended") actx.resume();
+    if (state.mode === "play" && MIC.ready && !MIC.paused){
+      keepAwake(true);
+      if (!MIC.raf) micLoop();
+    }
+  } else {
+    keepAwake(false);
+  }
+});
+
 function micStop(){
   if (MIC.raf) cancelAnimationFrame(MIC.raf);
   MIC.raf = 0; MIC.hist = []; MIC.midi = null; MIC.clarity = 0; MIC.level = 0; MIC.agree = 0;
+  keepAwake(false);
   MIC.env = 0; MIC.envMin = 1e9; MIC.needOnset = false;
 }
 function micLoop(){
@@ -1684,6 +1768,8 @@ function renderMicLive(){
 function renderMic(){
   const panel = $("micPanel");
   const show = (state.mode === "play");
+  document.body.classList.toggle("playmode", show);
+  if (!show) document.body.classList.remove("showboard");
   panel.className = "mic" + (show ? " show" : "") + (MIC.ready ? " listening" : "");
   if (!show) return;
   $("micStart").style.display = MIC.ready ? "none" : "";
@@ -1700,7 +1786,8 @@ function renderMic(){
   [...document.querySelectorAll("[data-sens]")].forEach(c =>
     c.classList.toggle("on", c.dataset.sens === state.sens));
   $("micMsg").textContent = MIC.err ? MIC.err
-    : (MIC.ready ? "Listening. One note at a time, clean tone. " + SENS_LABEL[state.sens][1] + "."
+    : (MIC.ready ? "Listening — one note at a time, clean tone. " +
+                   SENS_LABEL[state.sens][1].charAt(0).toUpperCase() + SENS_LABEL[state.sens][1].slice(1) + "."
                  : "One-off browser permission. Nothing is recorded or sent anywhere.");
   $("micMsg").style.color = MIC.err ? "var(--red)" : "";
   renderMicLive();
@@ -1867,11 +1954,17 @@ $("optAdaptive").addEventListener("change", e => { state.adaptive = e.target.che
 $("micStart").addEventListener("click", micStart);
 $("micPause").addEventListener("click", () => {
   MIC.paused = !MIC.paused;
+  keepAwake(!MIC.paused);
   MIC.hist = []; MIC.midi = null; MIC.agree = 0; MIC.level = 0; MIC.clarity = 0;
   if (!MIC.paused && MIC.ready && !MIC.raf) micLoop();
   renderMic();
 });
 $("micRec").addEventListener("click", micRecord);
+$("bigToggle").addEventListener("click", () => {
+  const on = document.body.classList.toggle("showboard");
+  $("bigToggle").textContent = on ? "Hide the fretboard" : "Show the fretboard";
+  if (on) renderBoard();
+});
 document.addEventListener("click", e => {
   const c = e.target.closest("[data-sens]"); if (!c) return;
   state.sens = c.dataset.sens;
