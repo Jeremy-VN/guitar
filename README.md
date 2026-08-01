@@ -34,6 +34,16 @@ Edit `lessons.json`, run the script, commit the result.
 3. `python3 build_index.py`
 4. Commit and push. GitHub Pages redeploys in about a minute.
 
+## Publishing
+
+The site needs no credentials to run — GitHub Pages serves it straight from this repo.
+A token is only needed at the moment of a push. Use a **fine-grained** personal access
+token restricted to this repository with **Contents: Read and write** (Metadata: Read-only
+is added automatically and is mandatory). A classic `repo`-scope token would grant access
+to every repository on the account, which this task does not need.
+
+The Pages URL is case-sensitive: **/guitar/**, not /Guitar/.
+
 ## Notes
 
 - **The microphone mode needs HTTPS.** It works on the live site; it will not work
