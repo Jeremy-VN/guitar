@@ -431,7 +431,11 @@ let state = JSON.parse(JSON.stringify(DEF));
 
 const blankStat = () => ({attempts:0, correct:0, streak:0, best:0, totalMs:0, timed:0, by:{}});
 let stats = {interval:blankStat(), fret:blankStat(), chord:blankStat(), degree:blankStat()};
-let session = {attempts:0, correct:0};
+/* Same rule as the fretboard trainer: response times only count when they measure
+   recall. The first answer of a sitting and anything over 5 s are excluded from the
+   TIMING, but still count towards accuracy. */
+const TIME_CAP_MS = 5000;
+let session = {attempts:0, correct:0, scored:0};
 
 let canPersist = false;
 try { localStorage.setItem("__et__","1"); localStorage.removeItem("__et__"); canPersist = true; } catch(e){}
@@ -582,7 +586,10 @@ function record(key, right, ms){
     st.correct++; session.correct++; st.by[key].c++;
     st.streak++; if (st.streak > st.best) st.best = st.streak;
   } else st.streak = 0;
-  if (ms != null && ms < 120000){ st.totalMs += ms; st.timed++; }
+  const useTime = (ms != null && session.scored > 0 && ms <= TIME_CAP_MS);
+  if (useTime){ st.totalMs += ms; st.timed++; }
+  else if (ms != null) st.excluded = (st.excluded || 0) + 1;
+  session.scored++;
   save();
 }
 
@@ -796,7 +803,12 @@ function renderBreakdown(){
          '</td><td>' + pct + '%</td><td><div class="bar"><i style="width:' + pct + '%;background:' + col +
          '"></i></div></td></tr>';
   }
-  elBreak.innerHTML = o + '</table>';
+  const exc = st.excluded || 0;
+  elBreak.innerHTML = o + '</table>' +
+    '<p class="sub" style="font-size:13px;margin-top:8px;">Timing excludes revealed answers, the ' +
+    'first answer of each sitting, and anything over ' + (TIME_CAP_MS/1000) + ' s' +
+    (exc ? ' &mdash; <b>' + exc + '</b> excluded so far' : '') +
+    '. Those answers still count towards accuracy.</p>';
 }
 
 function renderTone(){
@@ -877,7 +889,7 @@ $("btnReplay").addEventListener("click", playQuestion);
 $("btnNext").addEventListener("click", newQuestion);
 $("btnReveal").addEventListener("click", reveal);
 $("btnResetStats").addEventListener("click", () => {
-  stats[state.mode] = blankStat(); session = {attempts:0, correct:0}; save(); renderAll();
+  stats[state.mode] = blankStat(); session = {attempts:0, correct:0, scored:0}; save(); renderAll();
 });
 $("toneSynth").addEventListener("click", () => { state.tone = "synth"; save(); renderTone(); });
 $("toneGuitar").addEventListener("click", () => { state.tone = "guitar"; save(); gtrLoadAll(); renderTone(); });

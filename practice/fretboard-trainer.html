@@ -408,6 +408,7 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid 
 <div class="card">
   <div class="row" style="margin-bottom:8px;">
     <button class="btn" id="btnResetStats">Reset all stats</button>
+    <button class="btn" id="btnResetTimes">Reset times only</button>
     <span class="sub" id="persistNote"></span>
   </div>
   <div id="breakdown"></div>
@@ -491,6 +492,12 @@ function prettyDate(key){
 }
 const SESSION_GAP_MS = 20 * 60 * 1000;   /* >20 min idle starts a new session */
 
+/* Response times only mean something if they measure recall. Two things get excluded —
+   from the TIMING only; they still count for right/wrong:
+     - the first answer of a sitting: you're picking up the guitar, not recalling
+     - anything over 5 s: that's an interruption or working it out, not knowing it     */
+const TIME_CAP_MS = 5000;
+
 /* sessions are counted per DAY; questions/accuracy/time are broken down per drill */
 function dayObj(key){
   if (!stats.days) stats.days = {};
@@ -530,7 +537,7 @@ function lastPracticeDay(){
   return null;
 }
 let stats = blankStats();
-let session = { attempts: 0, correct: 0 };
+let session = { attempts: 0, correct: 0, scored: 0 };
 
 /* localStorage is optional — the trainer works fully without it */
 let canPersist = false;
@@ -1343,7 +1350,10 @@ function recordResult(pc, right, ms){
   stats.lastTs = now;
   rec.a++;
   if (right) rec.c++;
-  if (ms != null && ms < 120000){ rec.ms += ms; rec.timed++; }
+  const useTime = (ms != null && session.scored > 0 && ms <= TIME_CAP_MS);
+  if (useTime){ rec.ms += ms; rec.timed++; }
+  else if (ms != null) stats.excludedTimes = (stats.excludedTimes || 0) + 1;
+  session.scored = (session.scored || 0) + 1;
 
   stats.attempts++; session.attempts++;
   stats.byPc[pc].a++;
@@ -1353,7 +1363,7 @@ function recordResult(pc, right, ms){
   } else {
     stats.streak = 0;
   }
-  if (ms != null && ms < 60000){
+  if (useTime){
     stats.totalMs += ms; stats.timed++;
     stats.byPc[pc].ms += ms; stats.byPc[pc].timed++;
   }
@@ -1585,10 +1595,13 @@ function renderBreakdown(){
          '<td><div class="bar"><i style="width:' + pct + '%;background:' + col + '"></i></div></td></tr>';
   }
   o += '</table>';
+  const exc = stats.excludedTimes || 0;
   o += '<p class="sub" style="font-size:13px;margin-top:8px;">Sorted worst accuracy first. ' +
-       'Average time counts only answered questions, not revealed ones &mdash; ' +
        '<span style="color:var(--accent)">&#9650;</span> marks your slowest note, which is often ' +
-       'a better target than the least accurate one.</p>';
+       'a better target than the least accurate one.<br>Timing excludes revealed answers, the first ' +
+       'answer of each sitting, and anything over ' + (TIME_CAP_MS/1000) + ' s' +
+       (exc ? ' &mdash; <b>' + exc + '</b> excluded so far' : '') +
+       '. Those answers still count towards accuracy.</p>';
   elBreak.innerHTML = o;
 }
 
@@ -1996,8 +2009,15 @@ $("optHearAll").addEventListener("change", e => { state.hearAll = e.target.check
 $("optHearOnShow").addEventListener("change", e => { state.hearOnShow = e.target.checked; save(); });
 $("optFlats").addEventListener("change", e => { state.flats = e.target.checked; save(); renderAll(); });
 
+$("btnResetTimes").addEventListener("click", () => {
+  stats.totalMs = 0; stats.timed = 0; stats.excludedTimes = 0;
+  stats.byPc.forEach(r => { r.ms = 0; r.timed = 0; });
+  for (const d in (stats.days || {}))
+    for (const m in stats.days[d].modes){ stats.days[d].modes[m].ms = 0; stats.days[d].modes[m].timed = 0; }
+  save(); renderAll();
+});
 $("btnResetStats").addEventListener("click", () => {
-  stats = blankStats(); session = {attempts:0, correct:0}; save(); renderAll();
+  stats = blankStats(); session = {attempts:0, correct:0, scored:0}; save(); renderAll();
 });
 
 /* keyboard */
