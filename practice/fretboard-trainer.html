@@ -305,6 +305,10 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid 
   <button class="pausebtn" id="micPause" style="display:none">&#9208;&#65038; Pause listening</button>
   <p class="sub" id="micDiag" style="font-size:12.5px;font-family:'SF Mono',ui-monospace,monospace;margin:8px 0 0;"></p>
   <button class="btn" id="bigToggle">Show the fretboard</button>
+  <div class="row" id="playOpts" style="margin-top:10px;display:none">
+    <label class="sw"><input type="checkbox" id="optPlayAll"> Play <b>every</b> one, not just one</label>
+    <label class="sw"><input type="checkbox" id="optSpeak"> &#128266; Say it out loud</label>
+  </div>
   <div class="row" id="sensRow" style="margin-top:10px;display:none">
     <span style="font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Sensitivity</span>
     <div class="chips">
@@ -461,7 +465,7 @@ const DEF = {
   notes: [true,false,true,false,true,true,false,true,false,true,false,true],
   sound: true, names: false, auto: true, adaptive: false, flats: false,
   hearAll: true, hearOnShow: false, tone: "synth",
-  level: "basic", goalQ: 80, goalS: 2, sens: "high"
+  level: "basic", goalQ: 80, goalS: 2, sens: "high", playAll: false, speak: false
 };
 let state = JSON.parse(JSON.stringify(DEF));
 
@@ -557,7 +561,8 @@ function save(){
       notes:state.notes, sound:state.sound, names:state.names, auto:state.auto,
       adaptive:state.adaptive, flats:state.flats,
       hearAll:state.hearAll, hearOnShow:state.hearOnShow, tone:state.tone,
-      level:state.level, goalQ:state.goalQ, goalS:state.goalS, sens:state.sens
+      level:state.level, goalQ:state.goalQ, goalS:state.goalS, sens:state.sens,
+      playAll:state.playAll, speak:state.speak
     }));
   } catch (e) {}
 }
@@ -870,6 +875,37 @@ function micStart(){
     renderMic();
   });
 }
+/* ---- say the instruction aloud, so you can look at the guitar not the screen ---- */
+const STR_SPEECH = ["high E", "B", "G", "D", "A", "low E"];
+const SPEAK_NAME = ["C","C sharp","D","D sharp","E","F","F sharp","G","G sharp","A","A sharp","B"];
+function speakText(pc, nPitches){
+  if (!state.speak) return;
+  try {
+    if (!("speechSynthesis" in window)) return;
+    const name = SPEAK_NAME[pc];
+    const article = /^[AEF]/.test(name) ? "an " : "a ";
+    const on = [0,1,2,3,4,5].filter(i => state.strings[i]);
+    let where = "";
+    if (on.length < 6){
+      const names = on.map(i => STR_SPEECH[i]);
+      where = " on the " + (names.length === 1 ? names[0] + " string"
+              : names.slice(0,-1).join(", ") + " and " + names[names.length-1] + " strings");
+    }
+    /* "all 3 As" gets read as "az", so the count goes in its own sentence */
+    const many = state.playAll && nPitches > 1;
+    const u = new SpeechSynthesisUtterance(many
+      ? "Play every " + name + where + ". All " + nPitches + "."
+      : "Play " + article + name + where);
+    u.rate = 0.95;
+    /* don't let the detector hear the phone talking */
+    MIC.muteUntil = Date.now() + 4000;
+    u.onend = () => { MIC.muteUntil = Date.now() + 250; MIC.hist = []; };
+    u.onerror = () => { MIC.muteUntil = Date.now() + 250; };
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
 /* ---- capture the real thing: 10 s of raw audio, saved as a WAV ---- */
 function micRecord(){
   if (!MIC.ready || MIC.rec) return;
@@ -1036,6 +1072,16 @@ function onNoteHeard(m){
   const hit = q.targets.filter(p => OPEN_MIDI[p.s] + p.f === m);
 
   if (hit.length){
+    if (state.playAll && q.pitches.length > 1){
+      if (q.found.indexOf(m) < 0) q.found.push(m);
+      q.heard = m;
+      if (q.found.length < q.pitches.length){ renderAll(); return; }   /* more to go */
+      q.done = true; q.wasRight = (q.wrong.length === 0); q.played = q.targets;
+      recordResult(q.pc, q.wasRight, Date.now() - q.t0);
+      renderAll();
+      if (state.auto) advanceTimer = setTimeout(newQuestion, 2000);
+      return;
+    }
     q.done = true; q.wasRight = true; q.heard = m; q.played = hit;
     recordResult(q.pc, true, Date.now() - q.t0);
     renderAll();
@@ -1046,6 +1092,13 @@ function onNoteHeard(m){
     /* right note, just not within the strings/frets being tested — never punished */
     q.nearMiss = m;
     q.nearCount = (q.nearCount || 0) + 1;
+    renderAll();
+    return;
+  }
+  if (state.playAll && q.pitches.length > 1){
+    /* a wrong note costs you the clean round but doesn't end the hunt */
+    if (q.wrong.indexOf(m) < 0) q.wrong.push(m);
+    q.heard = m;
     renderAll();
     return;
   }
@@ -1225,6 +1278,13 @@ function dotState(s, f, pc, inRange){
   /* PLAY mode — board stays blank until you answer, then it shows every place the note lives */
   if (state.mode === "play"){
     if (!q || !q.done){
+      /* mid-hunt, tick off what you've already played — both places if they share a pitch,
+         because the microphone genuinely cannot tell them apart */
+      if (q && state.playAll && q.pitches && q.pitches.length > 1 && q.found.length &&
+          inRange && q.found.indexOf(OPEN_MIDI[s] + f) >= 0){
+        return Object.assign(base, {circle:true, r:13.5, fill:"#57c98b", op:1,
+          label:pcName(pc), tc:"#0f1115", fs:IS_ACC[pc] ? 10 : 12});
+      }
       return inRange ? Object.assign(base, {circle:true, r:3.2, fill:"#3d4657", op:1}) : base;
     }
     const isTarget = q.targets.some(p => p.s === s && p.f === f);
@@ -1318,9 +1378,15 @@ function newQuestion(){
       if (String(pc) !== lastKey || notes.length === 1) break;
     }
     lastKey = String(pc);
-    q = {pc:pc, targets:activePositions(pc), t0:Date.now(), done:false, wasRight:false};
+    const targets = activePositions(pc);
+    /* The microphone hears pitch, not position. Two places that sound the same note
+       are one target, and saying otherwise would ask for something unverifiable. */
+    const pitches = [...new Set(targets.map(t => OPEN_MIDI[t.s] + t.f))].sort((a,b) => a - b);
+    q = {pc:pc, targets:targets, pitches:pitches, found:[], wrong:[],
+         t0:Date.now(), done:false, wasRight:false};
     MIC.hist = []; MIC.lastCommit = Date.now();
     MIC.needOnset = true; MIC.envMin = MIC.env;
+    speakText(pc, pitches.length);
   } else if (state.mode === "find"){
     const notes = activeNotes();
     if (!notes.length){ q = null; renderAll(); return; }
@@ -1458,9 +1524,41 @@ function renderPrompt(){
       : "string" + (strs.length > 1 ? "s " : " ") + strs.map(s => STR_NUM[s]).join(", ") +
         " (" + strs.map(s => STR_LABEL[s]).join(" ") + ")";
     const lo = Math.min(state.fretMin, state.fretMax), hi = Math.max(state.fretMin, state.fretMax);
+    const hunting = state.playAll && q.pitches && q.pitches.length > 1;
     let hint = strTxt + " &middot; frets " + lo + "&ndash;" + hi + " &middot; " +
                q.targets.length + " place" + (q.targets.length === 1 ? "" : "s") + " it could be";
     let fb = "";
+    if (hunting && !q.done){
+      /* the mic hears pitch, not position: two places at the same pitch are one target */
+      hint = "Play <b>all " + q.pitches.length + "</b> &mdash; " + q.found.length + " of " +
+             q.pitches.length + " so far" +
+             (q.found.length ? " (" + q.found.map(midiName).join(", ") + ")" : "") +
+             " &middot; " + strTxt + " &middot; frets " + lo + "&ndash;" + hi;
+      if (q.wrong.length) fb = '<span class="fb no">&#10007; ' + q.wrong.length +
+        ' wrong note' + (q.wrong.length === 1 ? "" : "s") + ' so far</span>';
+      else if (q.found.length) fb = '<span class="fb ok">&#10003; ' + q.found.length +
+        ' of ' + q.pitches.length + '</span>';
+      else if (q.nearMiss != null) fb = '<span class="fb info">right note, outside the range</span>';
+      elPrompt.innerHTML =
+        '<div class="txt"><div class="big">Play every ' +
+        '<span style="color:var(--accent)">' + pcNameBoth(q.pc) + '</span></div>' +
+        '<span class="hint">' + hint + '</span></div>' + fb;
+      return;
+    }
+    if (hunting && q.done && !q.revealed){
+      hint = "All " + q.pitches.length + " found &mdash; " + q.pitches.map(midiName).join(", ") +
+             ". Every position marked on the board." +
+             (q.wrong.length ? " " + q.wrong.length + " wrong note" +
+              (q.wrong.length === 1 ? "" : "s") + " along the way." : "");
+      fb = q.wasRight
+        ? '<span class="fb ok">&#10003; all ' + q.pitches.length + ', clean</span>'
+        : '<span class="fb no">&#10007; all found, but ' + q.wrong.length + ' wrong on the way</span>';
+      elPrompt.innerHTML =
+        '<div class="txt"><div class="big">Play every ' +
+        '<span style="color:var(--accent)">' + pcNameBoth(q.pc) + '</span></div>' +
+        '<span class="hint">' + hint + '</span></div>' + fb;
+      return;
+    }
     if (q.done && q.wasRight){
       hint = midiName(q.heard) + " &mdash; " + q.played.map(posLabel).join(" or ") +
              ". All " + q.targets.length + " marked on the board.";
@@ -1713,6 +1811,8 @@ function renderChips(){
   $("optFlats").checked = state.flats;
   $("optHearAll").checked = state.hearAll;
   $("optHearOnShow").checked = state.hearOnShow;
+  $("optPlayAll").checked = state.playAll;
+  $("optSpeak").checked = state.speak;
   $("goalQ").value = state.goalQ;
   $("goalS").value = state.goalS;
   [...document.querySelectorAll("#tabs .tab")].forEach(t =>
@@ -1806,6 +1906,8 @@ function renderMic(){
   $("micStart").textContent = MIC.starting ? "Starting…" : "Enable microphone";
   $("micLive").style.display = MIC.ready ? "" : "none";
   $("sensRow").style.display = MIC.ready ? "" : "none";
+  $("playOpts").style.display = MIC.ready ? "" : "none";
+  $("optSpeak").disabled = !("speechSynthesis" in window);
   const pb = $("micPause");
   pb.style.display = MIC.ready ? "" : "none";
   pb.className = "pausebtn" + (MIC.paused ? " paused" : "");
@@ -2008,6 +2110,22 @@ $("toneGuitar").addEventListener("click", () => {
 $("optHearAll").addEventListener("change", e => { state.hearAll = e.target.checked; save(); });
 $("optHearOnShow").addEventListener("change", e => { state.hearOnShow = e.target.checked; save(); });
 $("optFlats").addEventListener("change", e => { state.flats = e.target.checked; save(); renderAll(); });
+/* Changing "play every one" mid-question would change what the current question asks for,
+   so start a fresh one rather than silently moving the goalposts. */
+$("optPlayAll").addEventListener("change", e => {
+  state.playAll = e.target.checked; save();
+  if (state.mode === "play") newQuestion(); else renderAll();
+});
+$("optSpeak").addEventListener("change", e => {
+  state.speak = e.target.checked; save();
+  if (!state.speak && "speechSynthesis" in window){
+    try { window.speechSynthesis.cancel(); } catch (err) {}
+    MIC.muteUntil = 0;
+  } else if (state.speak && state.mode === "play" && q && !q.done){
+    speakText(q.pc, q.pitches ? q.pitches.length : 1);
+  }
+  renderAll();
+});
 
 $("btnResetTimes").addEventListener("click", () => {
   stats.totalMs = 0; stats.timed = 0; stats.excludedTimes = 0;
