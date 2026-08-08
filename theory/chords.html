@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building Major &amp; Minor Chords — reference</title>
+<style>
+  :root{--bg:#0f1115;--panel:#171a21;--panel2:#1e222b;--ink:#e8eaed;--muted:#9aa3b2;
+    --accent:#e0b341;--accent2:#5aa9e6;--green:#57c98b;--red:#e5736b;--line:#2a2f3a;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 22px 80px;}
+  header{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:26px;}
+  .back{display:inline-block;font-size:13.5px;margin-bottom:12px;color:var(--accent2);text-decoration:none;}
+  h1{font-size:26px;margin:0 0 6px;line-height:1.25;}
+  h2{font-size:20px;margin:36px 0 12px;padding-top:6px;border-top:1px solid var(--line);color:var(--accent);}
+  h3{font-size:16px;margin:20px 0 6px;color:var(--accent2);}
+  .sub{color:var(--muted);font-size:14px;margin:0;}
+  p{margin:8px 0;} ul{margin:8px 0;padding-left:20px;} li{margin:4px 0;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0;}
+  code,.mono{background:#232833;border:1px solid var(--line);border-radius:5px;padding:1px 6px;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13px;}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14.5px;}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top;}
+  th{background:var(--panel2);color:var(--accent);font-weight:600;}
+  .maj{color:var(--green);} .min{color:var(--red);}
+  .note{color:var(--muted);font-size:13.5px;}
+  .lead{color:#c4cad6;}
+  .third{color:#ffe14d;font-weight:700;}
+  .formula{font-family:"SF Mono",monospace;font-size:14px;color:#cdd6e4;background:#0c0e13;
+    border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;margin:10px 0;}
+  .root{color:var(--accent);font-weight:700;}
+  a{color:var(--accent2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <a class="back" href="index.html">&larr; Music Theory</a>
+  <h1>Building Major &amp; Minor Chords</h1>
+  <p class="sub">How every basic chord is manufactured from a root note and a fixed pattern of steps</p>
+</header>
+
+<div class="card">
+  <p class="lead">A basic chord (a <strong>triad</strong>) is just three notes: the <strong>1st, 3rd and 5th</strong> notes of a scale. So if you can build the scale from a root note, you can build the chord — you just keep every second note.</p>
+  <p>A <strong>whole step (W)</strong> = 2 frets (2 semitones); a <strong>half step (H)</strong> = 1 fret (1 semitone).</p>
+</div>
+
+<h2>1. The two formulas</h2>
+
+<div class="card">
+  <h3 style="margin-top:0">Major</h3>
+  <p>Major scale, from the root: <strong class="maj">W&nbsp;W&nbsp;H&nbsp;W&nbsp;W&nbsp;W&nbsp;H</strong></p>
+  <div class="formula">Root <span class="maj">—W—</span> 2 <span class="maj">—W—</span> <span class="third">3</span> <span class="maj">—H—</span> 4 <span class="maj">—W—</span> <span class="third">5</span> —W— 6 —W— 7 —H— (Root)
+             └──────── the major CHORD = 1 · <span class="third">3</span> · <span class="third">5</span> ────────┘</div>
+  <p>Keep notes <strong>1, 3, 5</strong> and you have the <span class="maj">major triad</span>.</p>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Minor</h3>
+  <p>Natural-minor scale, from the root: <strong class="min">W&nbsp;H&nbsp;W&nbsp;W&nbsp;H&nbsp;W&nbsp;W</strong></p>
+  <div class="formula">Root —W— 2 <span class="min">—H—</span> <span class="third">3</span> —W— 4 —W— <span class="third">5</span> <span class="min">—H—</span> 6 —W— 7 —W— (Root)
+             └──────── the minor CHORD = 1 · <span class="third">3</span> · <span class="third">5</span> ────────┘</div>
+  <p>Keep notes <strong>1, 3, 5</strong> and you have the <span class="min">minor triad</span>.</p>
+</div>
+
+<h2>2. The shortcut — stack two thirds</h2>
+<p>You don't have to spell the whole scale. Counting only in <strong>semitones (frets)</strong> from the root:</p>
+<table>
+  <tr><th>Chord</th><th>Root → 3rd</th><th>3rd → 5th</th><th>Root → 5th</th></tr>
+  <tr><td class="maj">Major triad</td><td><strong>4</strong> semitones (major 3rd)</td><td><strong>3</strong> semitones (minor 3rd)</td><td>7 (perfect 5th)</td></tr>
+  <tr><td class="min">Minor triad</td><td><strong>3</strong> semitones (minor 3rd)</td><td><strong>4</strong> semitones (major 3rd)</td><td>7 (perfect 5th)</td></tr>
+</table>
+<p>So <span class="maj">major = 4 then 3</span>, <span class="min">minor = 3 then 4</span>. The 5th is a perfect 5th (7 frets) either way.</p>
+
+<div class="card" style="border-left:3px solid var(--accent);">
+  <p style="margin:0;"><strong>The one‑note difference.</strong> The root and the 5th are identical in both. Only the <span class="third">3rd</span> moves — a semitone <em>lower</em> for minor. <span class="mono">A major = A <span class="third">C#</span> E</span>; <span class="mono">A minor = A <span class="third">C</span> E</span>. Flatten the middle note and a major chord becomes minor.</p>
+</div>
+
+<h2>3. Every natural root, A–G</h2>
+<p>The three notes of each chord (root · <span class="third">3rd</span> · 5th):</p>
+<table>
+  <tr><th>Root</th><th>Major chord</th><th>Minor chord</th></tr>
+  <tr><td class="root">A</td><td class="maj">A · <span class="third">C#</span> · E</td><td class="min">A · <span class="third">C</span> · E</td></tr>
+  <tr><td class="root">B</td><td class="maj">B · <span class="third">D#</span> · F#</td><td class="min">B · <span class="third">D</span> · F#</td></tr>
+  <tr><td class="root">C</td><td class="maj">C · <span class="third">E</span> · G</td><td class="min">C · <span class="third">E&#9837;</span> · G</td></tr>
+  <tr><td class="root">D</td><td class="maj">D · <span class="third">F#</span> · A</td><td class="min">D · <span class="third">F</span> · A</td></tr>
+  <tr><td class="root">E</td><td class="maj">E · <span class="third">G#</span> · B</td><td class="min">E · <span class="third">G</span> · B</td></tr>
+  <tr><td class="root">F</td><td class="maj">F · <span class="third">A</span> · C</td><td class="min">F · <span class="third">A&#9837;</span> · C</td></tr>
+  <tr><td class="root">G</td><td class="maj">G · <span class="third">B</span> · D</td><td class="min">G · <span class="third">B&#9837;</span> · D</td></tr>
+</table>
+<p class="note">In every row the root and 5th are the same across major and minor — only the yellow 3rd changes.</p>
+
+<h2>4. The parent scales (for reference)</h2>
+<p>If you want to see where the 1‑3‑5 comes from, here are the full scales each chord is drawn from:</p>
+<table>
+  <tr><th>Root</th><th>Major scale (W W H W W W H)</th><th>Natural-minor scale (W H W W H W W)</th></tr>
+  <tr><td class="root">A</td><td class="maj">A B C# D E F# G#</td><td class="min">A B C D E F G</td></tr>
+  <tr><td class="root">B</td><td class="maj">B C# D# E F# G# A#</td><td class="min">B C# D E F# G A</td></tr>
+  <tr><td class="root">C</td><td class="maj">C D E F G A B</td><td class="min">C D E&#9837; F G A&#9837; B&#9837;</td></tr>
+  <tr><td class="root">D</td><td class="maj">D E F# G A B C#</td><td class="min">D E F G A B&#9837; C</td></tr>
+  <tr><td class="root">E</td><td class="maj">E F# G# A B C# D#</td><td class="min">E F# G A B C D</td></tr>
+  <tr><td class="root">F</td><td class="maj">F G A B&#9837; C D E</td><td class="min">F G A&#9837; B&#9837; C D&#9837; E&#9837;</td></tr>
+  <tr><td class="root">G</td><td class="maj">G A B C D E F#</td><td class="min">G A B&#9837; C D E&#9837; F</td></tr>
+</table>
+<p class="note">Take the 1st, 3rd and 5th note of any row and you get that chord in the table above. (These are the <em>natural</em> minor scales; the chord only needs the 1‑3‑5, which is the same whichever minor scale you use.)</p>
+
+<h2>5. Two quick tips</h2>
+<ul>
+  <li><strong>Name notes by letter first.</strong> A triad always uses <em>every second letter</em> — A‑C‑E, B‑D‑F, C‑E‑G, etc. Then add the sharp/flat needed to hit the right fret. That's why C minor's 3rd is written <span class="mono">E&#9837;</span>, not <span class="mono">D#</span> — the letter must be E.</li>
+  <li><strong>To go major → minor, drop the 3rd by one fret;</strong> minor → major, raise it one fret. Nothing else moves.</li>
+</ul>
+
+</div>
+</body>
+</html>
