@@ -1,0 +1,26 @@
+[
+  {
+    "kind": "Fretboard",
+    "title": "Fretboard Note Trainer",
+    "summary": "Name the note under a marker, find every position of a named note, or pick up the guitar and <b>play</b> it &mdash; the microphone checks you. Filter by string, fret range and note. Tap anything to hear it; finish a round and it plays every position from low to high. Tracks accuracy, streaks, average time and which notes you keep missing.",
+    "tags": ["Note names", "Fretboard mapping", "Play it yourself", "Ear reference"],
+    "open": "Open tool",
+    "file": "fretboard-trainer.html"
+  },
+  {
+    "kind": "Ear",
+    "title": "Ear Trainer",
+    "summary": "Four drills: intervals, hear-it-then-find-it on the fretboard, chord quality, and scale degrees against an established key. Synth or recorded acoustic guitar. Per-drill stats so you can see which intervals and chords you actually can't hear yet.",
+    "tags": ["Intervals", "Chord quality", "Scale degrees", "Relative pitch"],
+    "open": "Open tool",
+    "file": "ear-trainer.html"
+  },
+  {
+    "kind": "Method",
+    "title": "How to Practise This &mdash; what the evidence says",
+    "summary": "A review of the learning-science literature applied to fretboard training: how long a session, how many a day, how many notes at once, and how to space them. Includes the things that get repeated constantly and have failed to replicate. Every claim graded, every N given.",
+    "tags": ["Spacing", "Retrieval practice", "Interleaving", "Evidence"],
+    "open": "Read",
+    "file": "how-to-practise.html"
+  }
+]

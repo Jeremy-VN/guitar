@@ -27,7 +27,7 @@
     border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0;
     transition:border-color .15s ease, transform .15s ease, background .15s ease;}
   .card:hover{border-color:var(--accent2);background:#191d27;transform:translateY(-2px);}
-  .kind{display:inline-block;font-size:12.5px;font-weight:600;color:var(--accent);
+  .date,.kind{display:inline-block;font-size:12.5px;font-weight:600;color:var(--accent);
     background:#231d0e;border:1px solid #4a3d18;border-radius:20px;padding:2px 11px;margin-bottom:10px;}
   .card h2{font-size:19px;margin:2px 0 6px;line-height:1.3;color:var(--ink);}
   .summary{color:#c4cad6;font-size:14.5px;margin:0 0 12px;}
@@ -35,52 +35,43 @@
   .tag{display:inline-block;font-size:12px;color:var(--muted);background:var(--panel2);
     border:1px solid var(--line);border-radius:6px;padding:2px 8px;margin:0 5px 5px 0;}
   .open{font-size:13.5px;font-weight:600;color:var(--accent2);}
+  .empty{color:var(--muted);}
   footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <a class="back" href="../index.html">&larr; Guitar lessons</a>
+    <a class="back" href="../index.html">&larr; Jeremy&#x27;s Guitar</a>
     <h1>&#127925; Practice Tools</h1>
-    <p class="sub">2 tools + the method &middot; tap a card to open &middot; everything runs in the browser, nothing to install</p>
+    <p class="sub">Everything runs in the browser, nothing to install &middot; tap a card to open</p>
   </header>
 
-  <a class="card" href="fretboard-trainer.html">
-    <div class="kind">Fretboard</div>
-    <h2>Fretboard Note Trainer</h2>
-    <p class="summary">Name the note under a marker, find every position of a named note, or pick up the guitar
-      and <b>play</b> it &mdash; the microphone checks you. Filter by string, fret range and note. Tap anything to
-      hear it; finish a round and it plays every position from low to high. Tracks accuracy, streaks, average
-      time and which notes you keep missing.</p>
-    <div class="tags"><span class="tag">Note names</span><span class="tag">Fretboard mapping</span><span class="tag">Play it yourself</span><span class="tag">Ear reference</span></div>
-    <span class="open">Open tool &rarr;</span>
-  </a>
+    <a class="card" href="fretboard-trainer.html">
+      <div class="kind">Fretboard</div>
+      <h2>Fretboard Note Trainer</h2>
+      <p class="summary">Name the note under a marker, find every position of a named note, or pick up the guitar and <b>play</b> it &mdash; the microphone checks you. Filter by string, fret range and note. Tap anything to hear it; finish a round and it plays every position from low to high. Tracks accuracy, streaks, average time and which notes you keep missing.</p>
+      <div class="tags"><span class="tag">Note names</span><span class="tag">Fretboard mapping</span><span class="tag">Play it yourself</span><span class="tag">Ear reference</span></div>
+      <span class="open">Open tool &rarr;</span>
+    </a>
 
-  <a class="card" href="ear-trainer.html">
-    <div class="kind">Ear</div>
-    <h2>Ear Trainer</h2>
-    <p class="summary">Four drills: intervals, hear-it-then-find-it on the fretboard, chord quality, and
-      scale degrees against an established key. Synth or recorded acoustic guitar. Per-drill stats so you can
-      see which intervals and chords you actually can't hear yet.</p>
-    <div class="tags"><span class="tag">Intervals</span><span class="tag">Chord quality</span><span class="tag">Scale degrees</span><span class="tag">Relative pitch</span></div>
-    <span class="open">Open tool &rarr;</span>
-  </a>
+    <a class="card" href="ear-trainer.html">
+      <div class="kind">Ear</div>
+      <h2>Ear Trainer</h2>
+      <p class="summary">Four drills: intervals, hear-it-then-find-it on the fretboard, chord quality, and scale degrees against an established key. Synth or recorded acoustic guitar. Per-drill stats so you can see which intervals and chords you actually can't hear yet.</p>
+      <div class="tags"><span class="tag">Intervals</span><span class="tag">Chord quality</span><span class="tag">Scale degrees</span><span class="tag">Relative pitch</span></div>
+      <span class="open">Open tool &rarr;</span>
+    </a>
 
-  <a class="card" href="how-to-practise.html">
-    <div class="kind">Method</div>
-    <h2>How to Practise This &mdash; what the evidence says</h2>
-    <p class="summary">A review of the learning-science literature applied to fretboard training: how long a session,
-      how many a day, how many notes at once, and how to space them. Includes the things that get repeated
-      constantly and have failed to replicate. Every claim graded, every N given.</p>
-    <div class="tags"><span class="tag">Spacing</span><span class="tag">Retrieval practice</span><span class="tag">Interleaving</span><span class="tag">Evidence</span></div>
-    <span class="open">Read &rarr;</span>
-  </a>
+    <a class="card" href="how-to-practise.html">
+      <div class="kind">Method</div>
+      <h2>How to Practise This &mdash; what the evidence says</h2>
+      <p class="summary">A review of the learning-science literature applied to fretboard training: how long a session, how many a day, how many notes at once, and how to space them. Includes the things that get repeated constantly and have failed to replicate. Every claim graded, every N given.</p>
+      <div class="tags"><span class="tag">Spacing</span><span class="tag">Retrieval practice</span><span class="tag">Interleaving</span><span class="tag">Evidence</span></div>
+      <span class="open">Read &rarr;</span>
+    </a>
 
-  <footer>
-    Guitar tones are University of Iowa Electronic Music Studios acoustic guitar recordings;
-    the synth option is a Karplus-Strong plucked string generated in the browser.
-  </footer>
+  <footer>Guitar tones are University of Iowa Electronic Music Studios acoustic guitar recordings; the synth option is a Karplus-Strong plucked string generated in the browser.</footer>
 </div>
 </body>
 </html>

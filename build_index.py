@@ -1,21 +1,42 @@
 #!/usr/bin/env python3
-"""Regenerate the site's contents pages from lessons.json.
+"""Regenerate the site's contents pages from the section manifests.
 
-Writes:
-  index.html          - the top-level "Jeremy's Guitar" contents page
-  lessons/index.html  - the dated lesson list
+Four ISOLATED sections, each fed only by its OWN data so they can never bleed
+into or overwrite one another:
 
-Run:  python3 build_index.py
+  Lessons         lessons.json    -> lessons/index.html    (dated, newest first)
+  Music Theory    theory.json     -> theory/index.html
+  Practice Tools  practice.json   -> practice/index.html
+  Reference       (single page)   -> reference/index.html is a bespoke content
+                                     page; it is NOT regenerated here. The hub
+                                     just links to it.
+
+Also writes the hub:
+
+  index.html      the top-level "Jeremy's Guitar" page — ALWAYS all four section
+                  cards, in the order below.
+
+HOW TO ADD SOMETHING
+  * New lesson   -> add a block to lessons.json   (the guitar-lesson-builder skill does this)
+  * New theory   -> add a block to theory.json,   drop the page in theory/,   re-run
+  * New practice -> add a block to practice.json, drop the page in practice/, re-run
+Adding an item to one section never touches any other section. Re-run:
+
+    python3 build_index.py
 """
 import json, html, pathlib
 
 here = pathlib.Path(__file__).parent
-lessons = json.loads((here / "lessons.json").read_text(encoding="utf-8"))
-lessons.sort(key=lambda l: l["date"], reverse=True)          # newest first
 
 
 def esc(s):
     return html.escape(str(s), quote=True)
+
+
+def load(name):
+    """Load a manifest if present; missing manifest -> empty section (no crash)."""
+    p = here / name
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
 
 
 # Shared look, so every contents page matches the lesson pages.
@@ -45,15 +66,17 @@ CSS = """  :root{--bg:#0f1115;--panel:#171a21;--panel2:#1e222b;--ink:#e8eaed;--m
   footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px;}"""
 
 
-def page(title, h1, sub, body, back=None, footer=""):
+def page(title, h1, sub, body, back=None, footer="",
+         head_extra="", viewport="width=device-width, initial-scale=1.0"):
     back_html = f'    <a class="back" href="{back[1]}">&larr; {esc(back[0])}</a>\n' if back else ""
+    extra = (head_extra + "\n") if head_extra else ""
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="{viewport}">
 <title>{esc(title)}</title>
-<style>
+{extra}<style>
 {CSS}
 </style>
 </head>
@@ -73,77 +96,138 @@ def page(title, h1, sub, body, back=None, footer=""):
 """
 
 
-# ---------------------------------------------------------------- lessons page
-cards = []
+def section_card(item):
+    """A card for a Theory / Practice item. Manifest fields are trusted, authored
+    HTML fragments (they may contain entities like &mdash; or tags like <b>), so
+    they are inserted verbatim — not escaped. `file` is relative to the section dir."""
+    tags = "".join(f'<span class="tag">{t}</span>' for t in item.get("tags", []))
+    return f"""    <a class="card" href="{item['file']}">
+      <div class="kind">{item['kind']}</div>
+      <h2>{item['title']}</h2>
+      <p class="summary">{item['summary']}</p>
+      <div class="tags">{tags}</div>
+      <span class="open">{item.get('open', 'Open')} &rarr;</span>
+    </a>"""
+
+
+# ============================================================ 1. LESSONS section
+lessons = load("lessons.json")
+lessons.sort(key=lambda l: l["date"], reverse=True)          # newest first
+lesson_cards = []
 for l in lessons:
     tags = "".join(f'<span class="tag">{esc(t)}</span>' for t in l.get("tags", []))
-    # lessons.json stores repo-relative paths; this page already lives in lessons/
-    href = l["file"].split("/")[-1]
-    cards.append(f"""    <a class="card" href="{esc(href)}">
+    href = l["file"].split("/")[-1]                          # page lives in lessons/
+    lesson_cards.append(f"""    <a class="card" href="{esc(href)}">
       <div class="date">{esc(l.get("date_display", l["date"]))}</div>
       <h2>{esc(l["title"])}</h2>
       <p class="summary">{esc(l["summary"])}</p>
       <div class="tags">{tags}</div>
       <span class="open">Open lesson &rarr;</span>
     </a>""")
-
-count = len(lessons)
-lessons_body = "\n".join(cards) if cards else '  <p class="empty">No lessons yet.</p>'
+n_lessons = len(lessons)
 (here / "lessons").mkdir(exist_ok=True)
 (here / "lessons" / "index.html").write_text(
     page(
         title="Guitar Lessons",
         h1="&#127928; Lessons",
-        sub=f"{count} lesson{'s' if count != 1 else ''} &middot; tap a card to open",
-        body=lessons_body,
+        sub=f"{n_lessons} lesson{'s' if n_lessons != 1 else ''} &middot; tap a card to open",
+        body="\n".join(lesson_cards) if lesson_cards else '  <p class="empty">No lessons yet.</p>',
         back=("Jeremy's Guitar", "../index.html"),
         footer="Each lesson is a self-contained page with audio references built in.",
     ),
     encoding="utf-8",
 )
 
-# ------------------------------------------------------------------- hub page
+# ======================================================= 2. MUSIC THEORY section
+theory = load("theory.json")
+theory_body = "\n\n".join(section_card(i) for i in theory) \
+    if theory else '  <p class="empty">No theory pages yet.</p>'
+(here / "theory").mkdir(exist_ok=True)
+(here / "theory" / "index.html").write_text(
+    page(
+        title="Music Theory",
+        h1="&#127925; Music Theory",
+        sub="General theory, separate from the dated lessons &middot; reference you can come back to",
+        body=theory_body,
+        back=("Jeremy's Guitar", "../index.html"),
+        footer="More theory topics will land here as they come up.",
+    ),
+    encoding="utf-8",
+)
+
+# ===================================================== 3. PRACTICE TOOLS section
+practice = load("practice.json")
+practice_body = "\n\n".join(section_card(i) for i in practice) \
+    if practice else '  <p class="empty">No practice tools yet.</p>'
+PRACTICE_HEAD = """<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fretboard">
+<meta name="mobile-web-app-capable" content="yes">"""
+(here / "practice").mkdir(exist_ok=True)
+(here / "practice" / "index.html").write_text(
+    page(
+        title="Practice Tools",
+        h1="&#127925; Practice Tools",
+        sub="Everything runs in the browser, nothing to install &middot; tap a card to open",
+        body=practice_body,
+        back=("Jeremy's Guitar", "../index.html"),
+        footer="Guitar tones are University of Iowa Electronic Music Studios acoustic guitar "
+               "recordings; the synth option is a Karplus-Strong plucked string generated in the browser.",
+        head_extra=PRACTICE_HEAD,
+        viewport="width=device-width, initial-scale=1.0, viewport-fit=cover",
+    ),
+    encoding="utf-8",
+)
+
+# ======================================================= 4. REFERENCE (single page)
+# reference/index.html is a bespoke, self-generating content page (fretboard map,
+# octave/unison shapes, capo maths). It is intentionally NOT regenerated here — the
+# hub below simply links to it. If Reference ever becomes a multi-page list, give it
+# a reference.json manifest and add a block like the Theory/Practice sections above.
+
+# ================================================================== HUB (index.html)
+# Every section appears here, always, in this order. Edit copy/tags here; the item
+# lists come from each section's own manifest.
 SECTIONS = [
     {
-        "href": "lessons/index.html",
-        "kind": "Lessons",
-        "title": "Lessons",
-        "summary": "Every lesson written up in full &mdash; theory, tab, and a play button on every "
-                   f"box so you can hear the shape. {count} lesson{'s' if count != 1 else ''} so far.",
-        "tags": ["Theory", "Tab", "Audio"],
-        "open": "Open lessons",
+        "href": "lessons/index.html", "kind": "Lessons", "title": "Lessons",
+        "summary": ("Every lesson written up in full &mdash; theory, tab, and a play button on every "
+                    f"box so you can hear the shape. {n_lessons} lesson{'s' if n_lessons != 1 else ''} so far."),
+        "tags": ["Theory", "Tab", "Audio"], "open": "Open lessons",
     },
     {
-        "href": "practice/index.html",
-        "kind": "Practice",
-        "title": "Practice Tools",
-        "summary": "Fretboard note trainer, ear trainer, and the evidence review on how to practise "
-                   "this properly. Runs in the browser, tracks your accuracy over time.",
-        "tags": ["Fretboard", "Ear training", "Method"],
-        "open": "Open practice tools",
+        "href": "theory/index.html", "kind": "Theory", "title": "Music Theory",
+        "summary": ("General theory, not tied to a single lesson &mdash; chord construction, the modes, "
+                    "and whatever else comes up, each on its own page."),
+        "tags": ["Modes", "Chords", "Harmony"], "open": "Open theory",
     },
     {
-        "href": "reference/index.html",
-        "kind": "Reference",
-        "title": "Reference",
-        "summary": "The things worth looking up rather than memorising &mdash; the fretboard map, "
-                   "octave and unison shapes, and capo maths.",
-        "tags": ["Fretboard map", "Octaves", "Capo"],
-        "open": "Open reference",
+        "href": "practice/index.html", "kind": "Practice", "title": "Practice Tools",
+        "summary": ("Fretboard note trainer, ear trainer, and the evidence review on how to practise "
+                    "this properly. Runs in the browser, tracks your accuracy over time."),
+        "tags": ["Fretboard", "Ear training", "Method"], "open": "Open practice tools",
+    },
+    {
+        "href": "reference/index.html", "kind": "Reference", "title": "Reference",
+        "summary": ("The things worth looking up rather than memorising &mdash; the fretboard map, "
+                    "octave and unison shapes, and capo maths."),
+        "tags": ["Fretboard map", "Octaves", "Capo"], "open": "Open reference",
     },
 ]
-
 hub_cards = []
 for s in SECTIONS:
-    tags = "".join(f'<span class="tag">{esc(t)}</span>' for t in s["tags"])
-    hub_cards.append(f"""    <a class="card" href="{s["href"]}">
-      <div class="kind">{s["kind"]}</div>
-      <h2>{s["title"]}</h2>
-      <p class="summary">{s["summary"]}</p>
+    tags = "".join(f'<span class="tag">{t}</span>' for t in s["tags"])
+    hub_cards.append(f"""    <a class="card" href="{s['href']}">
+      <div class="kind">{s['kind']}</div>
+      <h2>{s['title']}</h2>
+      <p class="summary">{s['summary']}</p>
       <div class="tags">{tags}</div>
-      <span class="open">{s["open"]} &rarr;</span>
+      <span class="open">{s['open']} &rarr;</span>
     </a>""")
-
 (here / "index.html").write_text(
     page(
         title="Jeremy's Guitar",
@@ -156,4 +240,5 @@ for s in SECTIONS:
     encoding="utf-8",
 )
 
-print(f"Wrote index.html (hub) and lessons/index.html with {count} lesson card(s).")
+print(f"hub + lessons({n_lessons}) + theory({len(theory)}) + practice({len(practice)}); "
+      f"reference left as-is.")

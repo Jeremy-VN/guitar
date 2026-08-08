@@ -1,0 +1,26 @@
+[
+  {
+    "kind": "Theory",
+    "title": "Building Major &amp; Minor Chords",
+    "summary": "How every basic chord is manufactured from a root note &mdash; the major and minor step formulas, the 1&ndash;3&ndash;5 rule, and every chord spelled out for all seven roots (A&ndash;G).",
+    "tags": [
+      "Triads",
+      "W-W-H formula",
+      "A&ndash;G"
+    ],
+    "open": "Open the chord-building reference",
+    "file": "chords.html"
+  },
+  {
+    "kind": "Theory",
+    "title": "The Modes",
+    "summary": "The seven modes in full &mdash; what each is built from, how it feels, the genres it lives in, example tracks, and how to actually play them from one shape on the neck.",
+    "tags": [
+      "Ionian &rarr; Locrian",
+      "Character",
+      "Genres"
+    ],
+    "open": "Open the modes reference",
+    "file": "modes.html"
+  }
+]
