@@ -25,6 +25,7 @@
   th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top;}
   th{background:var(--panel2);color:var(--accent);font-weight:600;}
   .maj{color:var(--green);} .min{color:var(--red);}
+  .w{color:var(--green);font-weight:700;} .h{color:#ff9d3c;font-weight:700;}
   .note{color:var(--muted);font-size:13.5px;}
   .lead{color:#c4cad6;}
   .third{color:#ffe14d;font-weight:700;}
@@ -45,25 +46,25 @@
 
 <div class="card">
   <p class="lead">A basic chord (a <strong>triad</strong>) is just three notes: the <strong>1st, 3rd and 5th</strong> notes of a scale. So if you can build the scale from a root note, you can build the chord — you just keep every second note.</p>
-  <p>A <strong>whole step (W)</strong> = 2 frets (2 semitones); a <strong>half step (H)</strong> = 1 fret (1 semitone).</p>
+  <p>A <strong>whole step (<span class="w">W</span>)</strong> = 2 frets (2 semitones); a <strong>half step (<span class="h">H</span>)</strong> = 1 fret (1 semitone). Throughout, <span class="w">W</span> is green and <span class="h">H</span> is orange so the half‑steps jump out.</p>
 </div>
 
 <h2>1. The two formulas</h2>
 
 <div class="card">
   <h3 style="margin-top:0">Major</h3>
-  <p>Major scale, from the root: <strong class="maj">W&nbsp;W&nbsp;H&nbsp;W&nbsp;W&nbsp;W&nbsp;H</strong></p>
-  <div class="formula">Root <span class="maj">—W—</span> 2 <span class="maj">—W—</span> <span class="third">3</span> <span class="maj">—H—</span> 4 <span class="maj">—W—</span> <span class="third">5</span> —W— 6 —W— 7 —H— (Root)
-             └──────── the major CHORD = 1 · <span class="third">3</span> · <span class="third">5</span> ────────┘</div>
+  <p>Major scale, from the root: <strong><span class="w">W</span>&nbsp;<span class="w">W</span>&nbsp;<span class="h">H</span>&nbsp;<span class="w">W</span>&nbsp;<span class="w">W</span>&nbsp;<span class="w">W</span>&nbsp;<span class="h">H</span></strong> &nbsp;<span class="note">(<span class="h">H</span> = the half‑steps)</span></p>
+  <div class="formula"><span class="third">Root</span> <span class="w">—W—</span> 2 <span class="w">—W—</span> <span class="third">3</span> <span class="h">—H—</span> 4 <span class="w">—W—</span> <span class="third">5</span> <span class="w">—W—</span> 6 <span class="w">—W—</span> 7 <span class="h">—H—</span> (<span class="third">Root</span>)
+             └──────── the major CHORD = <span class="third">1</span> · <span class="third">3</span> · <span class="third">5</span> ────────┘</div>
   <p>Keep notes <strong>1, 3, 5</strong> and you have the <span class="maj">major triad</span>.</p>
 </div>
 
 <div class="card">
   <h3 style="margin-top:0">Minor</h3>
-  <p>Natural-minor scale, from the root: <strong class="min">W&nbsp;H&nbsp;W&nbsp;W&nbsp;H&nbsp;W&nbsp;W</strong></p>
-  <div class="formula">Root —W— 2 <span class="min">—H—</span> <span class="third">3</span> —W— 4 —W— <span class="third">5</span> <span class="min">—H—</span> 6 —W— 7 —W— (Root)
-             └──────── the minor CHORD = 1 · <span class="third">3</span> · <span class="third">5</span> ────────┘</div>
-  <p>Keep notes <strong>1, 3, 5</strong> and you have the <span class="min">minor triad</span>.</p>
+  <p>Natural-minor scale, from the root: <strong><span class="w">W</span>&nbsp;<span class="h">H</span>&nbsp;<span class="w">W</span>&nbsp;<span class="w">W</span>&nbsp;<span class="h">H</span>&nbsp;<span class="w">W</span>&nbsp;<span class="w">W</span></strong> &nbsp;<span class="note">(<span class="h">H</span> = the half‑steps)</span></p>
+  <div class="formula"><span class="third">Root</span> <span class="w">—W—</span> 2 <span class="h">—H—</span> <span class="third">m3</span> <span class="w">—W—</span> 4 <span class="w">—W—</span> <span class="third">5</span> <span class="h">—H—</span> 6 <span class="w">—W—</span> 7 <span class="w">—W—</span> (<span class="third">Root</span>)
+             └──────── the minor CHORD = <span class="third">1</span> · <span class="third">m3</span> · <span class="third">5</span> ────────┘</div>
+  <p>Keep notes <strong>1, <span class="min">m3</span>, 5</strong> and you have the <span class="min">minor triad</span> &mdash; the <span class="min">m3</span> is a <em>minor third</em>, one fret lower than the major 3rd.</p>
 </div>
 
 <h2>2. The shortcut — stack two thirds</h2>
@@ -96,16 +97,16 @@
 <h2>4. The parent scales (for reference)</h2>
 <p>If you want to see where the 1‑3‑5 comes from, here are the full scales each chord is drawn from:</p>
 <table>
-  <tr><th>Root</th><th>Major scale (W W H W W W H)</th><th>Natural-minor scale (W H W W H W W)</th></tr>
-  <tr><td class="root">A</td><td class="maj">A B C# D E F# G#</td><td class="min">A B C D E F G</td></tr>
-  <tr><td class="root">B</td><td class="maj">B C# D# E F# G# A#</td><td class="min">B C# D E F# G A</td></tr>
-  <tr><td class="root">C</td><td class="maj">C D E F G A B</td><td class="min">C D E&#9837; F G A&#9837; B&#9837;</td></tr>
-  <tr><td class="root">D</td><td class="maj">D E F# G A B C#</td><td class="min">D E F G A B&#9837; C</td></tr>
-  <tr><td class="root">E</td><td class="maj">E F# G# A B C# D#</td><td class="min">E F# G A B C D</td></tr>
-  <tr><td class="root">F</td><td class="maj">F G A B&#9837; C D E</td><td class="min">F G A&#9837; B&#9837; C D&#9837; E&#9837;</td></tr>
-  <tr><td class="root">G</td><td class="maj">G A B C D E F#</td><td class="min">G A B&#9837; C D E&#9837; F</td></tr>
+  <tr><th>Root</th><th>Major scale (W W H W W W H)</th><th>Natural-minor scale (W H W W H W W)</th><th>Relative minor (the 6th) &amp; its scale</th></tr>
+  <tr><td class="root">A</td><td class="maj">A B C# D E F# G#</td><td class="min">A B C D E F G</td><td><strong class="min">F#m</strong> &mdash; F# G# A B C# D E</td></tr>
+  <tr><td class="root">B</td><td class="maj">B C# D# E F# G# A#</td><td class="min">B C# D E F# G A</td><td><strong class="min">G#m</strong> &mdash; G# A# B C# D# E F#</td></tr>
+  <tr><td class="root">C</td><td class="maj">C D E F G A B</td><td class="min">C D E&#9837; F G A&#9837; B&#9837;</td><td><strong class="min">Am</strong> &mdash; A B C D E F G</td></tr>
+  <tr><td class="root">D</td><td class="maj">D E F# G A B C#</td><td class="min">D E F G A B&#9837; C</td><td><strong class="min">Bm</strong> &mdash; B C# D E F# G A</td></tr>
+  <tr><td class="root">E</td><td class="maj">E F# G# A B C# D#</td><td class="min">E F# G A B C D</td><td><strong class="min">C#m</strong> &mdash; C# D# E F# G# A B</td></tr>
+  <tr><td class="root">F</td><td class="maj">F G A B&#9837; C D E</td><td class="min">F G A&#9837; B&#9837; C D&#9837; E&#9837;</td><td><strong class="min">Dm</strong> &mdash; D E F G A B&#9837; C</td></tr>
+  <tr><td class="root">G</td><td class="maj">G A B C D E F#</td><td class="min">G A B&#9837; C D E&#9837; F</td><td><strong class="min">Em</strong> &mdash; E F# G A B C D</td></tr>
 </table>
-<p class="note">Take the 1st, 3rd and 5th note of any row and you get that chord in the table above. (These are the <em>natural</em> minor scales; the chord only needs the 1‑3‑5, which is the same whichever minor scale you use.)</p>
+<p class="note">Take the 1st, 3rd and 5th note of any row and you get that chord in the table above. The <strong>relative minor</strong> is the chord/scale built on the <em>6th note</em> of the major scale &mdash; it uses the exact same notes as the major, just starting from a different place (e.g. C major and A minor share all seven notes). (The middle column is each root's <em>own</em> natural minor; the last column is the minor that's the relative of that root's <em>major</em> &mdash; two different things.)</p>
 
 <h2>5. Two quick tips</h2>
 <ul>
