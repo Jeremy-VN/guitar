@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Modes — reference</title>
+<style>
+  :root{--bg:#0f1115;--panel:#171a21;--panel2:#1e222b;--ink:#e8eaed;--muted:#9aa3b2;
+    --accent:#e0b341;--accent2:#5aa9e6;--green:#57c98b;--red:#e5736b;--line:#2a2f3a;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 22px 80px;}
+  header{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:26px;}
+  .back{display:inline-block;font-size:13.5px;margin-bottom:12px;color:var(--accent2);text-decoration:none;}
+  h1{font-size:26px;margin:0 0 6px;line-height:1.25;}
+  h2{font-size:20px;margin:36px 0 12px;padding-top:6px;border-top:1px solid var(--line);color:var(--accent);}
+  h3{font-size:16px;margin:20px 0 6px;color:var(--accent2);}
+  .sub{color:var(--muted);font-size:14px;margin:0;}
+  p{margin:8px 0;} ul{margin:8px 0;padding-left:20px;} li{margin:4px 0;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0;}
+  code,.mono{background:#232833;border:1px solid var(--line);border-radius:5px;padding:1px 6px;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13px;}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px;}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;}
+  th{background:var(--panel2);color:var(--accent);font-weight:600;}
+  .maj{color:var(--green);} .min{color:var(--red);}
+  .dim{color:#c78bd6;}
+  .sig{color:#ffe14d;font-weight:700;}
+  .note{color:var(--muted);font-size:13.5px;}
+  .lead{color:#c4cad6;}
+  .spectrum{font-family:"SF Mono",monospace;font-size:13px;color:#cdd6e4;background:#0c0e13;
+    border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow-x:auto;}
+  .modehead{color:var(--accent);font-weight:700;}
+  a{color:var(--accent2);}
+  .lbl{color:var(--accent2);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <a class="back" href="index.html">&larr; Music Theory</a>
+  <h1>The Modes — the complete picture</h1>
+  <p class="sub">What each mode is, how it feels, where it's used, and how to play them from one shape</p>
+</header>
+
+<div class="card">
+  <p class="lead">A <strong>mode</strong> is what you get when you take one parent scale and treat a <em>different note as home</em>. The seven notes of the major scale give seven modes — same notes, seven different "gravity centres", each with its own colour. Playing the C major scale but resolving to D gives <span class="modehead">D Dorian</span>; resolving to G gives <span class="modehead">G Mixolydian</span>, and so on.</p>
+  <p>Two ways to think about them, both useful:</p>
+  <ul>
+    <li><strong>Derivative (re‑centring):</strong> one scale shape, seven homes. Great for seeing that they're all the same notes. (This is the trick in the <a href="../lessons/2026-08-03-scale-shapes-relative-minor.html">3 Aug lesson</a> — your relative minor is just the Aeolian mode.)</li>
+    <li><strong>Parallel (same root):</strong> keep the root fixed and alter one or two notes of the major/minor you already know. Best for actually <em>hearing</em> each mode's flavour against one tonic.</li>
+  </ul>
+</div>
+
+<h2>Brightest to darkest</h2>
+<p>Order the modes from most sharpened to most flattened and each step simply lowers one more note by a semitone — a clean "bright → dark" dimmer switch:</p>
+<div class="spectrum">brightest  Lydian → Ionian → Mixolydian → Dorian → Aeolian → Phrygian → Locrian  darkest
+            (♯4)     (major)   (♭7)         (♭7,♭3)  (natural   (♭2 …)     (♭2,♭5 …)
+                                                      minor)</div>
+<p class="note">Lydian is major with one note raised (the brightest); each move right flattens one more scale degree until Locrian, which has the most flats and an unstable ♭5.</p>
+
+<h2>All seven at a glance</h2>
+<table>
+  <tr><th>Mode</th><th>Type</th><th>Formula (vs major 1–7)</th><th>Signature note</th><th>In a word</th></tr>
+  <tr><td class="modehead">Ionian</td><td class="maj">major</td><td class="mono">1 2 3 4 5 6 7</td><td>major 7 (leading tone)</td><td>bright, resolved</td></tr>
+  <tr><td class="modehead">Dorian</td><td class="min">minor</td><td class="mono">1 2 <span class="sig">♭3</span> 4 5 <span class="sig">6</span> ♭7</td><td>natural 6 (over a minor)</td><td>soulful, groovy minor</td></tr>
+  <tr><td class="modehead">Phrygian</td><td class="min">minor</td><td class="mono">1 <span class="sig">♭2</span> ♭3 4 5 ♭6 ♭7</td><td>♭2</td><td>dark, Spanish</td></tr>
+  <tr><td class="modehead">Lydian</td><td class="maj">major</td><td class="mono">1 2 3 <span class="sig">♯4</span> 5 6 7</td><td>♯4</td><td>dreamy, floating</td></tr>
+  <tr><td class="modehead">Mixolydian</td><td class="maj">major</td><td class="mono">1 2 3 4 5 6 <span class="sig">♭7</span></td><td>♭7</td><td>bluesy, rocky</td></tr>
+  <tr><td class="modehead">Aeolian</td><td class="min">minor</td><td class="mono">1 2 ♭3 4 5 <span class="sig">♭6</span> ♭7</td><td>♭6 (natural minor)</td><td>sad, serious</td></tr>
+  <tr><td class="modehead">Locrian</td><td class="dim">diminished</td><td class="mono">1 ♭2 ♭3 4 <span class="sig">♭5</span> ♭6 ♭7</td><td>♭5</td><td>unstable, tense</td></tr>
+</table>
+<p class="note"><span class="sig">Yellow</span> marks each mode's signature note — the one degree that gives it its character.</p>
+
+<h2>Each mode in detail</h2>
+
+<div class="card">
+  <h3 class="modehead">Ionian — the major scale</h3>
+  <p><span class="mono">1 2 3 4 5 6 7</span>. The plain major scale: fully at rest, bright, wholesome.</p>
+  <p><span class="lbl">Feel:</span> happy, stable, "home". <span class="lbl">Genres:</span> pop, folk, country, classical, worship — most Western melody. <span class="lbl">Commonly cited:</span> "Let It Be", the bulk of the pop charts. <span class="lbl">Tip:</span> your default over any major key.</p>
+</div>
+
+<div class="card">
+  <h3 class="modehead">Dorian — the cool minor</h3>
+  <p><span class="mono">1 2 <span class="sig">♭3</span> 4 5 <span class="sig">6</span> ♭7</span>. A minor scale, but the <strong>natural 6th</strong> lifts the sadness — minor with hope and groove.</p>
+  <p><span class="lbl">Feel:</span> soulful, funky, hopeful minor. <span class="lbl">Genres:</span> jazz, funk, soul, rock, Celtic/folk. <span class="lbl">Commonly cited:</span> "So What" (Miles Davis), "Oye Como Va" (Santana), "Scarborough Fair", "Get Lucky" (Daft Punk). <span class="lbl">Tip:</span> over an Em groove, add the natural 6 (C#) → E Dorian.</p>
+</div>
+
+<div class="card">
+  <h3 class="modehead">Phrygian — the dark one</h3>
+  <p><span class="mono">1 <span class="sig">♭2</span> ♭3 4 5 ♭6 ♭7</span>. Minor with a <strong>♭2</strong> right above the root — instantly Spanish / flamenco, or heavy and menacing.</p>
+  <p><span class="lbl">Feel:</span> dark, tense, exotic. <span class="lbl">Genres:</span> flamenco, metal, film tension, Middle-Eastern-tinged music. <span class="lbl">Commonly cited:</span> flamenco generally; palm-muted metal riffing (much of Metallica's rhythm work); Joe Satriani "War". <span class="lbl">Tip:</span> lean on the ♭2 a fret above the root — that's the whole flavour.</p>
+</div>
+
+<div class="card">
+  <h3 class="modehead">Lydian — the dreamer</h3>
+  <p><span class="mono">1 2 3 <span class="sig">♯4</span> 5 6 7</span>. Major with a <strong>raised 4th</strong> that floats and never quite settles — wondrous, cinematic.</p>
+  <p><span class="lbl">Feel:</span> dreamy, magical, hopeful-but-unresolved. <span class="lbl">Genres:</span> film scores, prog, jazz fusion, dream-pop. <span class="lbl">Commonly cited:</span> The Simpsons theme (Danny Elfman), "Flying in a Blue Dream" (Joe Satriani), Steve Vai. <span class="lbl">Tip:</span> hang on the ♯4 over a major chord for the "movie" sound.</p>
+</div>
+
+<div class="card">
+  <h3 class="modehead">Mixolydian — the rocker</h3>
+  <p><span class="mono">1 2 3 4 5 6 <span class="sig">♭7</span></span>. Major with a <strong>flat 7th</strong> — the dominant / blues-rock sound: happy but earthy, made to groove.</p>
+  <p><span class="lbl">Feel:</span> bluesy, driving, good-time. <span class="lbl">Genres:</span> blues, rock, funk, jam bands, Celtic. <span class="lbl">Commonly cited:</span> "Sweet Home Alabama", "Norwegian Wood", much of the Grateful Dead. <span class="lbl">Tip:</span> it's the sound of a I–♭VII–IV vamp (e.g. D–C–G).</p>
+</div>
+
+<div class="card">
+  <h3 class="modehead">Aeolian — the natural minor</h3>
+  <p><span class="mono">1 2 ♭3 4 5 <span class="sig">♭6</span> ♭7</span>. The natural minor scale — this is the relative minor. The <strong>♭6</strong> is what makes it darker than Dorian.</p>
+  <p><span class="lbl">Feel:</span> sad, serious, introspective. <span class="lbl">Genres:</span> rock, pop ballads, metal, classical minor. <span class="lbl">Commonly cited:</span> vast — natural-minor rock/pop broadly (e.g. the "Stairway to Heaven" intro region). <span class="lbl">Tip:</span> your default over any minor key.</p>
+</div>
+
+<div class="card">
+  <h3 class="modehead">Locrian — the outsider</h3>
+  <p><span class="mono">1 ♭2 ♭3 4 <span class="sig">♭5</span> ♭6 ♭7</span>. The <strong>♭5</strong> makes even the home chord diminished, so it never rests — rarely a whole song, more a colour.</p>
+  <p><span class="lbl">Feel:</span> unstable, dissonant, unresolved. <span class="lbl">Genres:</span> fringe metal, and jazz over half-diminished (m7♭5) chords. <span class="lbl">Commonly cited:</span> Björk "Army of Me"; brief passages in metal. <span class="lbl">Tip:</span> use it over an m7♭5 chord, not as a key to write in.</p>
+</div>
+
+<h2>Playing them on guitar</h2>
+<div class="card">
+  <p><span class="lbl">One shape, seven homes (derivative):</span> take a major-scale shape you know — like the box in the <a href="../lessons/2026-08-03-scale-shapes-relative-minor.html">3 Aug lesson</a> — and resolve your phrases to a different note of it. Same fingering, new mode.</p>
+  <p><span class="lbl">Same root, alter a note (parallel):</span> keep the root fixed and nudge one degree of the major or minor you already play —</p>
+  <ul>
+    <li>Major &rarr; <strong>Lydian</strong>: raise the 4th. &nbsp; Major &rarr; <strong>Mixolydian</strong>: flatten the 7th.</li>
+    <li>Minor (Aeolian) &rarr; <strong>Dorian</strong>: raise the 6th. &nbsp; Minor &rarr; <strong>Phrygian</strong>: flatten the 2nd.</li>
+  </ul>
+  <p>The parallel way is best for <em>hearing</em> the difference, because the root stays put and only the colour note moves.</p>
+</div>
+
+<div class="card" style="border-left:3px solid var(--accent);">
+  <p class="note" style="margin:0;">A caveat worth keeping: labelling a whole song with a single mode is usually a simplification, and guitarists argue about it endlessly. Treat the example tracks as <em>commonly cited</em> illustrations of a sound, not strict facts — the useful thing is the <strong>character</strong> each mode carries, which you can hear for yourself.</p>
+</div>
+
+</div>
+</body>
+</html>
